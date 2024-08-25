@@ -1,0 +1,12 @@
+id,text
+1,"Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and act like humans."
+2,"Machine Learning is a subset of AI that involves training algorithms to learn from and make predictions or decisions based on data."
+3,"Deep Learning is a specialized form of Machine Learning that uses neural networks with many layers (hence 'deep') to analyze various data types."
+4,"Natural Language Processing (NLP) is a field of AI that focuses on the interaction between computers and human language."
+5,"Reinforcement Learning is a type of Machine Learning where an agent learns to make decisions by performing certain actions and receiving feedback."
+6,"Supervised learning involves training a model on a labeled dataset, meaning that each training example is paired with an output label."
+7,"Unsupervised learning involves training a model on data that does not have labeled outputs, allowing the model to find patterns and structure on its own."
+8,"In transfer learning, a model trained on one task is repurposed to perform a different, but related, task."
+9,"Overfitting occurs when a model learns the training data too well, including noise and details that don’t generalize to new data."
+10,"Underfitting occurs when a model is too simple to capture the underlying pattern in the data, resulting in poor performance on both training and test data."
+11,"FPT smart cloud là 1 công ty con của FPT "
