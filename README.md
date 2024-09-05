@@ -37,10 +37,11 @@ INSERT INTO faq (question, answer) VALUES
 
 ```
 
-
 ## Run milvus
-```
-wget https://github.com/milvus-io/milvus/releases/download/v2.0.2/milvus-standalone-docker-compose.yml -O docker-compose.yml
 
-docker compose up -d
+```sh
+curl -sfL https://raw.githubusercontent.com/milvus-io/milvus/master/scripts/standalone_embed.sh -o standalone_embed.sh
+
+bash standalone_embed.sh start
+
 ```
