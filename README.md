@@ -63,3 +63,29 @@ CREATE TABLE room (
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
+## Timeline
+28 day
+=> 20 days
+
+### 6/9: Done pipeline cơ bản
+
+### Deadline 16/9
+
+- Đảnh: Crawl data QA
+
+- Phong: Migrate/Import data -> Keyword: chunking, search theo dense/ sparse
+==> Embedding được content
+
+- APP
+    + Khôi: Backend
+    + Nhân: Frontend
+        - Database .x
+
+- Đạt: Benchmark
+
+
+*****
+- Report 
+
+
