@@ -45,3 +45,21 @@ curl -sfL https://raw.githubusercontent.com/milvus-io/milvus/master/scripts/stan
 bash standalone_embed.sh start
 
 ```
+
+
+## Run server backend
+
+```sh
+fastapi dev main.py
+```
+
+
+## Postgres 
+
+```sh
+CREATE TABLE room (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
