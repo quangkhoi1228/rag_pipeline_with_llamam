@@ -62,6 +62,12 @@ CREATE TABLE room (
     name VARCHAR(100) NOT NULL,
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE chat (
+    message Text NOT NULL,
+    sender  TEXT NOT NULL,
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ## Timeline
