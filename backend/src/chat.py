@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
-
+import tracemalloc
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from src.faq import create_faq, search_faq
+from src.entity import FAQ, Chat
 from src.llm import llm_model
-from src.database import milvus_db
 from src.embedding import embedding_query
-from src.database import pg_create_connection
+from src.database import pg_create_connection, milvus_db
 
 router = APIRouter()
 
@@ -18,14 +19,8 @@ class SendChat(BaseModel):
     history_count: int = 6
 
 
-class Chat(BaseModel):
-    message: str = None  # Auto-generated UUID
-    sender: str
-    created_date: datetime = datetime.now()
-
-
-async def create_context(chat: Chat):
-    message_embedding = embedding_query(chat.message)
+async def create_context(message: str):
+    message_embedding = embedding_query(message)
 
     res = milvus_db.search(
         collection_name="demo_collection",  # target collection
@@ -36,6 +31,27 @@ async def create_context(chat: Chat):
     context_items = res[0]
     context = [item['entity']['text'] for item in context_items]
     return context
+
+
+async def answer_with_rag_pipeline(chat: Chat):
+    context = await create_context(chat.message)
+
+    db_chat_history = await get_chat_history(count=chat.history_count)
+    chat_history = [(item.sender, item.message)
+                    for item in db_chat_history]
+
+    prompt_formatted = '''
+      You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+      Question: {question}
+      Context: {context}
+      History:{history}
+      Answer: 
+
+      '''.format(
+        question=chat.message, context=context, history=chat_history)
+
+    llm_res = llm_model.invoke(prompt_formatted)
+    return llm_res
 
 
 @router.get("/", response_model=list[Chat])
@@ -79,26 +95,22 @@ async def create_chat(chat: Chat):
 
 @router.post("/send", response_model=Chat)
 async def send_chat(chat: SendChat):
-    context = await create_context(chat)
 
-    db_chat_history = await get_chat_history(count=chat.history_count)
-    chat_history = [(item.sender, item.message)
-                    for item in db_chat_history]
+    similar_faq = search_faq(chat.message, 1)
 
-    prompt_formatted = '''
-        You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
-        Question: {question}
-        Context: {context}
-        History:{history}
-        Answer: 
+    if len(similar_faq) > 0 and similar_faq[0]['distance'] >= 0.9:
+        answer = str(similar_faq[0]['entity']['answer'])
+    else:
 
-        '''.format(
-        question=chat.message, context=context, history=chat_history)
+        llm_res = await answer_with_rag_pipeline(chat)
+        answer = llm_res
+        # save response to FAQ
 
-    llm_res = llm_model.invoke(prompt_formatted)
+        faq = FAQ(question=chat.message, answer=answer)
+        await create_faq(faq)
 
     user_chat = Chat(message=chat.message, sender='user')
-    system_chat = Chat(message=llm_res, sender='system')
+    system_chat = Chat(message=answer, sender='system')
 
     await create_chat(user_chat)
     await create_chat(system_chat)

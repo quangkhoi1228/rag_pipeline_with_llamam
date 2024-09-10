@@ -16,6 +16,13 @@ bash standalone_embed.sh start
 
 ```
 
+
+## Run Attu milvus UI
+
+```sh
+docker run -p 8001:3000 -e MILVUS_URL=172.20.10.2:19530 zilliz/attu:v2.4
+```
+
 ## Run server backend
 
 ```sh
@@ -40,12 +47,7 @@ CREATE TABLE page_content (
 );
 
 
-CREATE TABLE faq (
-    question TEXT,
-    answer TEXT,
-    PRIMARY KEY (question)
-);
-
+ 
 CREATE TABLE room (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -58,12 +60,7 @@ CREATE TABLE chat (
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO faq (question, answer) VALUES
-('What is the return policy?', 'You can return items within 30 days of purchase.'),
-('How do I reset my password?', 'Click ''Forgot Password'' on the login page.'),
-('What are the store hours?', 'We are open from 9 AM to 9 PM, Monday to Saturday.'),
-('Where can I find my order history?', 'Log in to your account and go to ''Order History''.'),
-('Do you offer international shipping?', 'Yes, we ship to many countries worldwide.');
+ 
 
 ```
 
