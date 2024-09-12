@@ -104,10 +104,11 @@ async def send_chat(chat: SendChat):
 
         llm_res = await answer_with_rag_pipeline(chat)
         answer = llm_res
-        # save response to FAQ
 
-        faq = FAQ(question=chat.message, answer=answer)
-        await create_faq(faq)
+        # save response to FAQ
+        # Không nên vì câu hỏi nào của người dùng cũng đưa vào FAQ được
+        # faq = FAQ(question=chat.message, answer=answer)
+        # create_faq(faq)
 
     user_chat = Chat(message=chat.message, sender='user')
     system_chat = Chat(message=answer, sender='system')
