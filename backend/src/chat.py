@@ -95,7 +95,6 @@ async def create_chat(chat: Chat):
 
 @router.post("/send", response_model=Chat)
 async def send_chat(chat: SendChat):
-
     similar_faq = search_faq(chat.message, 1)
 
     if len(similar_faq) > 0 and similar_faq[0]['distance'] >= 0.9:

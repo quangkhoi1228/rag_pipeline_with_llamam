@@ -1,6 +1,7 @@
+import asyncio
+import time
 import streamlit as st
-import api
-import models
+import models, api
 
 api_llm = api.API_LLM()
 
@@ -9,8 +10,18 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # Streamed response emulator
-async def send_message(message: models.Message):
-    return api_llm.make_request("send_message", message)
+def response_generator(content: str):
+    for word in content.split():
+        yield word + " "
+        time.sleep(0.05)
+
+# Send message
+async def send_message(message: models.Message) -> models.Assistant_Message:
+    response = await api_llm.make_request("send_message", message)
+    print(response)
+    assit_message = models.Assistant_Message(**response)
+    return assit_message
+
 
 async def main():
     # Display chat messages from history on app rerun
@@ -23,16 +34,21 @@ async def main():
         # Display user message in chat message container
         with st.chat_message("user"):
             st.markdown(prompt)
-            
+
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
-        
-            # Display assistant response in chat message container
+
+        # Display assistant response in chat message container
         with st.chat_message("assistant"):
-            message = models.Message(message=prompt, history_count=len(st.session_state.messages))
-            response = st.write_stream(send_message(message))
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": response})
+            message = models.Message(
+                message=prompt, history_count=len(st.session_state.messages)
+            )
+            assist_response = await send_message(message)
+            st.write_stream(response_generator(assist_response.message))
+            
+            # Add assistant response to chat history
+            st.session_state.messages.append({"role": "assistant", "content": assist_response})
+
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
