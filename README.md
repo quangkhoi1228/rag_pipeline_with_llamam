@@ -29,6 +29,12 @@ docker run -p 8001:3000 -e MILVUS_URL=172.20.10.2:19530 zilliz/attu:v2.4
 fastapi dev main.py
 ```
 
+## Run server frontend
+
+```sh
+streamlit run frontend/gui.py
+```
+
 
 ## Postgres tables
 
