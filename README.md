@@ -1,3 +1,9 @@
+---
+noteId: "6905a530769f11efa4add19c7c2db0fe"
+tags: []
+
+---
+
 # Setup
 
 ## Docker db
@@ -26,7 +32,7 @@ docker run -p 8001:3000 -e MILVUS_URL=172.20.10.2:19530 zilliz/attu:v2.4
 ## Run server backend
 
 ```sh
-fastapi dev main.py
+fastapi dev backend/main.py
 ```
 
 ## Run server frontend
@@ -91,9 +97,34 @@ CREATE TABLE chat (
 - Đạt: Benchmark
 
 
+
+#################
+# 26/9
+
+
+2. Data embedding: Phong
+  - Target: Toàn bộ dữ liệu được embedding: Title, content (text)
+
+3. Backend: Khôi / Nhân
+  - Prompt: Đạt
+  - Human feedback: Khôi, Nhân
+
+4. Frontend: Nhân
+  - Regenerate
+  - Clear
+  - Human feedback - like / dislike 
+
+5. Benchmark: Đạt / Đảnh
+  - Raw data Q&A: Đảnh 
+    - Target: 1000 ~ 2000 QA gần nhất
+
+
 *****
 - Report 
 
 
 ## Ref
 - Diagram: https://drive.google.com/file/d/1Z9ETxum10o4LGWEoNcpxDxN5rzFS-ssS/view?usp=sharing
+
+
+
