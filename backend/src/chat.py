@@ -134,6 +134,48 @@ async def clear_chat():
         cur.close()
         conn.close()
 
+
+@router.post("/regenerate", response_model=Chat)
+async def regenerate_chat(chat: SendChat):
+    conn, cur = pg_create_connection()
+    try:
+        llm_res = await answer_with_rag_pipeline(chat)
+        answer = llm_res
+
+        # save response to FAQ
+        # Không nên vì câu hỏi nào của người dùng cũng đưa vào FAQ được
+        # faq = FAQ(question=chat.message, answer=answer)
+        # create_faq(faq)
+
+        # remove chat
+        cur.execute(
+            """WITH RowsToDelete AS (
+                SELECT ctid,
+                    ROW_NUMBER() OVER (ORDER BY created_date DESC) AS rn
+                FROM chat
+            )
+            DELETE FROM chat
+            WHERE ctid IN (
+                SELECT ctid
+                FROM RowsToDelete
+                WHERE rn <= 2
+            );""")
+        conn.commit()
+        user_chat = Chat(message=chat.message, sender='user')
+        system_chat = Chat(message=answer, sender='system')
+
+        await create_chat(user_chat)
+        await create_chat(system_chat)
+
+        return system_chat
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error regenerate chat: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+
 # @router.get("/{chat_id}", response_model=Chat)
 # async def get_chat(chat_id: str):
 #     conn, cur = pg_create_connection()

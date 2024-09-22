@@ -1,0 +1,96 @@
+Cần: Sắp xếp lại FAQ sau 1 khoảng thời gian
+
+Hướng tiếp cận: Ranking các câu trả lời của người dùng sau 1 khoảng thời gian thì update lại FAQ
+
+
+Question: 
+1. Làm sao sinh ra các câu trả lời 
+2. Làm sao Ranking
+3. Tích hợp vào hệ thống như thế nào?
+4. làm sao thêm câu trả lời mới vào FAQ
+
+Answer:
+1. Sẽ có 1 bảng lưu thông tin các câu trả lời khi người dùng bấm generate 
+  -> Vì nếu ng dùng ok với câu trả lời rồi thì ko cần generate, mà chỉ khi câu trả lời ko ok thì mới generate 
+  -> Có bao nhiêu câu trả lời tối đa
+    => Có tối đa (10) câu trả lời cho cùng 1 câu hỏi -> Sau đó sẽ random trong 10 câu này chi đến khi dc thống kê
+
+
+2. Mặc định mỗi câu trả lời là (5) point
+- Khi generate thì thêm 1 feedback tệ cho câu trả lời này 
+- Khi like thì thêm feedback tốt
+- Khi dislike thì thêm feedback tệ
+
+
+4. Trong lúc thống kê và xếp hạng sẽ dựa vào các câu hỏi của người dùng thường hỏi để đưa vào FAQ
+  a. 
+
+
+1. Feedback:
+Data? : 
+
+Khi user hỏi
+Model gen 10 câu trả lời khác nhau
+
+=> Re-rank 10 câu trả lời dựa trên feedback 
+    1. Model - RL: Chưa chắc train dc
+    2. Thống kê 
+
+=> Top 3 câu trả lời 
+
+
+T0;
+Feedback 0 có gì? 
+
+FAQ vector 
+
+User hỏi: Nghị định 1 là gì?
+System: Gen ra 1 câu --> regenerate ==> 3 câu (mới hoàn toàn) *
+
+==> Pick 1 câu (A) trong *
+
+
+T1: 
+Question:  Nghị định 1 là gì?
+Answer: A
+
+
+User hỏi: bạn biết dự dịnh 1 ko?
+__> Gen ra 3 câu ==> LLM re-rank
+
+<>
+
+RLHF -> 
+
+
+Tránh bịa 
+
+LLM => 3 ~ 5 version response ==> So sánh các response này với nhau 
+
+Repo 
+
+
+
+Question: Nghị định 1 là gì?
+1. Answer 1 -
+2. Answer 2
+.
+.
+.
+10. Answer 10
+
+
+11 => feedback
+1. like
+2. dislike
+2. like
+....
+
+=> Top 1 : Answer 1
+
+FAQ: 
+Question: Nghị định 1 là gì?
+Answer: Answer 1
+
+
+
