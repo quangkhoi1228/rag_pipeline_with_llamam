@@ -1,42 +1,15 @@
-import tracemalloc
-import uuid
-from datetime import datetime
-from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, conint, field_validator
 from src.database import milvus_db, pg_create_connection
 from src.embedding import embedding_query
-from src.entity import FAQ, Chat, FAQPool
-from src.faq import (CreateFAQPool, FAQResponse, create_faq, create_faq_pool,
+from src.entity import Chat, ChatResponse, SendChat
+from src.faq import (CreateFAQPool, create_faq_pool,
                      search_faq)
 from src.llm import llm_model
-from src.util import convert_int_to_string, generate_uuid
 
 router = APIRouter()
 
 # Pydantic model for Chat data
-
-
-class SendChat(BaseModel):
-    message: str = 'Quyết định 720/QĐ-CTN năm 2020'  # Auto-generated UUID
-    history_count: int = 6
-    faq_id: Optional[str] = None
-
-
-class Reference(BaseModel):
-    url: str
-    title: str  # List of
-
-
-class ChatResponse(BaseModel):
-    response: Chat
-    references: list[Reference] = []  # List of
-    faq_id: Optional[int] = None
-
-    @field_validator('faq_id')
-    def convert_id(cls, v):
-        return convert_int_to_string(v)  # Sử dụng hàm chuyển đổi
 
 
 async def create_context(message: str):
