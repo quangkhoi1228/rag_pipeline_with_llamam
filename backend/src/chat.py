@@ -1,9 +1,10 @@
 
 from fastapi import APIRouter, HTTPException
+from src.config import MAX_FAQ_POOL
 from src.database import milvus_db, pg_create_connection
 from src.embedding import embedding_query
 from src.entity import Chat, ChatResponse, SendChat
-from src.faq import (CreateFAQPool, create_faq_pool,
+from src.faq import (CreateFAQPool, create_faq_pool, get_faq_pool_by_id, random_faq_from_faq_pool,
                      search_faq)
 from src.llm import llm_model
 
@@ -120,17 +121,22 @@ async def send_chat(chat: SendChat):
 
 @router.post("/regenerate", response_model=ChatResponse)
 async def regenerate_chat(chat: SendChat):
-
+    context_items = []
     prev_faq_id = chat.faq_id
-    faq_id = None
+    faq_id = prev_faq_id
     conn, cur = pg_create_connection()
     try:
-
-        [llm_res, context_items] = await answer_with_rag_pipeline(chat)
-
-        answer = llm_res
-
-        # remove chat
+        faq_pools = await get_faq_pool_by_id(faq_id=prev_faq_id)
+        # return random faq from pool if reaching max faq bool, else using rag
+        if len(faq_pools) <= MAX_FAQ_POOL - 1:
+            [llm_res, context_items] = await answer_with_rag_pipeline(chat)
+            answer = llm_res
+            # insert faq bool
+            await create_faq_pool(CreateFAQPool(faq_id=prev_faq_id, answer=answer))
+        else:
+            faq_pool = await random_faq_from_faq_pool(faq_id=prev_faq_id)
+            answer = faq_pool.answer
+        # remove 2 lastest chat
         cur.execute(
             """WITH RowsToDelete AS (
                 SELECT ctid,
@@ -145,16 +151,12 @@ async def regenerate_chat(chat: SendChat):
             );""")
         conn.commit()
 
+        # log history
         user_chat = Chat(message=chat.message, sender='user')
         system_chat = Chat(message=answer, sender='system')
 
         await create_chat(user_chat)
         await create_chat(system_chat)
-
-        # insert faq bool
-        # ...
-
-        await create_faq_pool(CreateFAQPool(faq_id=prev_faq_id, answer=answer))
 
         return ChatResponse(response=system_chat, references=context_items, faq_id=faq_id)
     except Exception as e:
@@ -180,66 +182,3 @@ async def clear_chat():
     finally:
         cur.close()
         conn.close()
-
-
-# @router.get("/{chat_id}", response_model=Chat)
-# async def get_chat(chat_id: str):
-#     conn, cur = pg_create_connection()
-#     try:
-#         cur.execute("SELECT * FROM chat WHERE id = %s", (chat_id,))
-#         chat_data = cur.fetchone()
-
-#         if chat_data is None:
-#             raise HTTPException(status_code=404, detail="Chat not found")
-
-#         chat = Chat(**chat_data)
-#         return chat
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Error getting chat: {e}")
-#     finally:
-#         cur.close()
-#         conn.close()
-
-
-# @router.put("/{chat_id}", response_model=Chat)
-# async def update_chat(chat_id: str, chat: Chat):
-#     conn, cur = pg_create_connection()
-#     try:
-#         cur.execute(
-#             "UPDATE chat SET name = %s WHERE id = %s", (chat.name, chat_id)
-#         )
-#         conn.commit()
-
-#         cur.execute("SELECT * FROM chat WHERE id = %s", (chat_id,))
-#         updated_chat_data = cur.fetchone()
-
-#         if updated_chat_data is None:
-#             raise HTTPException(status_code=404, detail="Chat not found")
-
-#         updated_chat = Chat(**updated_chat_data)
-#         return updated_chat
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=500, detail=f"Error updating chat: {e}")
-#     finally:
-#         cur.close()
-#         conn.close()
-
-
-# @router.delete("/{chat_id}")
-# async def delete_chat(chat_id: str):
-#     conn, cur = pg_create_connection()
-#     try:
-#         cur.execute("DELETE FROM chat WHERE id = %s", (chat_id,))
-#         conn.commit()
-
-#         if cur.rowcount == 0:
-#             raise HTTPException(status_code=404, detail="Chat not found")
-
-#         return {"message": "Chat deleted successfully"}
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=500, detail=f"Error deleting chat: {e}")
-#     finally:
-#         cur.close()
-#         conn.close()

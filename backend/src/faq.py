@@ -139,3 +139,23 @@ async def delete_faq_pool_by_faq_id(faq_id: str):
     finally:
         cur.close()
         conn.close()
+
+
+@router.get("/pool/{faq_id}/random", response_model=FAQPool)
+async def random_faq_from_faq_pool(faq_id: str):
+    conn, cur = pg_create_connection()
+    try:
+        cur.execute(
+            "select *  from faq_pool where faq_id=%s order by RANDOM() limit 1", (faq_id,))
+        row = cur.fetchone()
+
+        faq_pool = FAQPool(
+            id=row[0], faq_id=row[1], question=row[2], answer=row[3], created_date=row[4])
+        return faq_pool
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error getting faq_pool: {e}")
+    finally:
+        cur.close()
+        conn.close()
