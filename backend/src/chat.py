@@ -1,14 +1,17 @@
-from typing import List
+import tracemalloc
 import uuid
 from datetime import datetime
-import tracemalloc
+from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from src.faq import FAQResponse, create_faq, search_faq
-from src.entity import FAQ, Chat
-from src.llm import llm_model
+from pydantic import BaseModel, conint, field_validator
+from src.database import milvus_db, pg_create_connection
 from src.embedding import embedding_query
-from src.database import pg_create_connection, milvus_db
+from src.entity import FAQ, Chat, FAQPool
+from src.faq import (CreateFAQPool, FAQResponse, create_faq, create_faq_pool,
+                     search_faq)
+from src.llm import llm_model
+from src.util import convert_int_to_string, generate_uuid
 
 router = APIRouter()
 
@@ -18,6 +21,7 @@ router = APIRouter()
 class SendChat(BaseModel):
     message: str = 'Quyết định 720/QĐ-CTN năm 2020'  # Auto-generated UUID
     history_count: int = 6
+    faq_id: Optional[str] = None
 
 
 class Reference(BaseModel):
@@ -28,6 +32,11 @@ class Reference(BaseModel):
 class ChatResponse(BaseModel):
     response: Chat
     references: list[Reference] = []  # List of
+    faq_id: Optional[int] = None
+
+    @field_validator('faq_id')
+    def convert_id(cls, v):
+        return convert_int_to_string(v)  # Sử dụng hàm chuyển đổi
 
 
 async def create_context(message: str):
@@ -43,7 +52,7 @@ async def create_context(message: str):
     context_items = res[0]
     reference = [
         {"url": context_item['entity']['url'],
-            'title': context_item['entity']['title']}
+         'title': context_item['entity']['title']}
         for context_item in context_items]
     context = [item['entity']['text'] for item in context_items]
     return [context, reference]
@@ -61,7 +70,7 @@ async def answer_with_rag_pipeline(chat: Chat):
         Question: {question}
         Context: {context}
         History:{history}
-        Answer: 
+        Answer:
 
         '''.format(
         question=chat.message, context=context, history=chat_history)
@@ -110,10 +119,13 @@ async def create_chat(chat: Chat):
 
 @router.post("/send", response_model=ChatResponse)
 async def send_chat(chat: SendChat):
+    reference = []
+    faq_id = None
     similar_faq = search_faq(chat.message, 1)
 
     if len(similar_faq) > 0 and similar_faq[0]['distance'] >= 0.9:
         answer = str(similar_faq[0]['entity']['answer'])
+        faq_id = similar_faq[0]['id']
     else:
 
         [llm_res, reference] = await answer_with_rag_pipeline(chat)
@@ -130,37 +142,20 @@ async def send_chat(chat: SendChat):
     await create_chat(user_chat)
     await create_chat(system_chat)
 
-    return ChatResponse(response=system_chat, references=reference)
-
-
-@router.delete("/clear", response_model=bool)
-async def clear_chat():
-    conn, cur = pg_create_connection()
-    try:
-        cur.execute(
-            f"TRUNCATE TABLE chat ")
-        conn.commit()
-
-        return True
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error clear chat: {e}")
-    finally:
-        cur.close()
-        conn.close()
+    return ChatResponse(response=system_chat, references=reference, faq_id=faq_id)
 
 
 @router.post("/regenerate", response_model=ChatResponse)
 async def regenerate_chat(chat: SendChat):
+
+    prev_faq_id = chat.faq_id
+    faq_id = None
     conn, cur = pg_create_connection()
     try:
-        [llm_res, context_items] = await answer_with_rag_pipeline(chat)
-        answer = llm_res
 
-        # save response to FAQ
-        # Không nên vì câu hỏi nào của người dùng cũng đưa vào FAQ được
-        # faq = FAQ(question=chat.message, answer=answer)
-        # create_faq(faq)
+        [llm_res, context_items] = await answer_with_rag_pipeline(chat)
+
+        answer = llm_res
 
         # remove chat
         cur.execute(
@@ -176,16 +171,39 @@ async def regenerate_chat(chat: SendChat):
                 WHERE rn <= 2
             );""")
         conn.commit()
+
         user_chat = Chat(message=chat.message, sender='user')
         system_chat = Chat(message=answer, sender='system')
 
         await create_chat(user_chat)
         await create_chat(system_chat)
 
-        return ChatResponse(response=system_chat, references=context_items)
+        # insert faq bool
+        # ...
+
+        await create_faq_pool(CreateFAQPool(faq_id=prev_faq_id, answer=answer))
+
+        return ChatResponse(response=system_chat, references=context_items, faq_id=faq_id)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error regenerate chat: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+
+@router.delete("/clear", response_model=bool)
+async def clear_chat():
+    conn, cur = pg_create_connection()
+    try:
+        cur.execute(
+            f"TRUNCATE TABLE chat ")
+        conn.commit()
+
+        return True
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error clear chat: {e}")
     finally:
         cur.close()
         conn.close()

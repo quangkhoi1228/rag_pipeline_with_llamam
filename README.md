@@ -71,9 +71,10 @@ CREATE TABLE chat (
 
 
 CREATE TABLE faq_pool (
-    id SERIAL PRIMARY KEY,
-    question VARCHAR(100) NOT NULL,
-    answer  TEXT NOT NULL,
+    id TEXT PRIMARY KEY,
+    faq_id TEXT NOT NULL,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
