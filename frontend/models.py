@@ -14,7 +14,7 @@ class Message():
             "history_count": self.history_count
         }
 
-class Assistant_Message():
+class Assistant_Respone():
     message:str
     sender: str
     created_date: datetime
@@ -23,3 +23,19 @@ class Assistant_Message():
         self.message = message
         self.sender = sender
         self.created_date = created_date
+
+class Assistant_Ref():
+    url:str
+    title: str
+    
+    def __init__(self, url:str, title: str):
+        self.url = url
+        self.title = title
+
+class Assistant_Message():
+    response: Assistant_Respone
+    references: list[Assistant_Ref]
+    
+    def __init__(self, response:Assistant_Respone, references: list[Assistant_Ref]):
+        self.response = response
+        self.references = references
