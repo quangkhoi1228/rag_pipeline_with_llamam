@@ -2,7 +2,8 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from src.util import generate_uuid
+from src.entity import Room
 from src.database import pg_create_connection
 
 router = APIRouter()
@@ -10,16 +11,7 @@ router = APIRouter()
 # Pydantic model for Room data
 
 
-class Room(BaseModel):
-    id: str = None  # Auto-generated UUID
-    name: str
-    created_date: datetime = datetime.now()
-
 # Function to generate a unique UUID
-
-
-def generate_uuid():
-    return str(uuid.uuid4())
 
 
 # CRUD operations

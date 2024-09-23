@@ -1,6 +1,13 @@
 
 from datetime import datetime
+import uuid
 from pydantic import BaseModel
+
+
+class Room(BaseModel):
+    id: str = None  # Auto-generated UUID
+    name: str
+    created_date: datetime = datetime.now()
 
 
 class FAQ(BaseModel):
@@ -8,10 +15,18 @@ class FAQ(BaseModel):
     answer: str
 
 
+class FAQPool(BaseModel):
+    id: str = None  # Auto-generated UUID
+    question: str
+    answer: str
+    created_date: datetime = datetime.now()
+
+
 class Chat(BaseModel):
     message: str = None  # Auto-generated UUID
     sender: str
     created_date: datetime = datetime.now()
+
 
 
 class Feedback(BaseModel):

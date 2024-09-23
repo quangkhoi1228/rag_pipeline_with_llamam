@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from src.entity import FAQ
+from src.util import generate_uuid
+from src.entity import FAQ, FAQPool
 from src.embedding import embedding_document, embedding_query
 from src.database import milvus_db, pg_create_connection
 
@@ -46,3 +47,107 @@ def create_faq(faq: FAQ):
     res = milvus_db.insert(collection_name="faq_collection", data=data)
 
     return faq
+
+
+# FAQ pool
+@router.post("/pool", response_model=FAQPool)
+async def create_faq_pool(faq_pool: FAQPool):
+    conn, cur = pg_create_connection()
+    try:
+        # Generate a unique UUID for the faq_pool ID
+        faq_pool.id = generate_uuid()
+
+        # Insert the faq_pool data into the database
+        cur.execute(
+            "INSERT INTO faq_pool (id, question, answer, created_date) VALUES (%s, %s,%s, %s)",
+            (faq_pool.id, faq_pool.question, faq_pool.answer, faq_pool.created_date),
+        )
+        conn.commit()
+
+        return faq_pool
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error creating faq_pool: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+
+@router.get("/pool", response_model=list[FAQPool])
+async def get_all_faq_pools():
+    conn, cur = pg_create_connection()
+    try:
+        cur.execute("SELECT * FROM faq_pool")
+        faq_pools_data = cur.fetchall()
+
+        faq_pools = [FAQPool(**faq_pool_data) for faq_pool_data in faq_pools_data]
+        return faq_pools
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error getting all faq_pools: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+
+@router.get("/{faq_pool_id}", response_model=FAQPool)
+async def get_faq_pool(faq_pool_id: str):
+    conn, cur = pg_create_connection()
+    try:
+        cur.execute("SELECT * FROM faq_pool WHERE id = %s", (faq_pool_id,))
+        faq_pool_data = cur.fetchone()
+
+        if faq_pool_data is None:
+            raise HTTPException(status_code=404, detail="FAQPool not found")
+
+        faq_pool = FAQPool(**faq_pool_data)
+        return faq_pool
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting faq_pool: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+
+# @router.put("/{faq_pool_id}", response_model=FAQPool)
+# async def update_faq_pool(faq_pool_id: str, faq_pool: FAQPool):
+#     conn, cur = pg_create_connection()
+#     try:
+#         cur.execute(
+#             "UPDATE faq_pool SET name = %s WHERE id = %s", (faq_pool.name, faq_pool_id)
+#         )
+#         conn.commit()
+
+#         cur.execute("SELECT * FROM faq_pool WHERE id = %s", (faq_pool_id,))
+#         updated_faq_pool_data = cur.fetchone()
+
+#         if updated_faq_pool_data is None:
+#             raise HTTPException(status_code=404, detail="FAQPool not found")
+
+#         updated_faq_pool = FAQPool(**updated_faq_pool_data)
+#         return updated_faq_pool
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=500, detail=f"Error updating faq_pool: {e}")
+#     finally:
+#         cur.close()
+#         conn.close()
+
+
+@router.delete("/{faq_pool_id}")
+async def delete_faq_pool(faq_pool_id: str):
+    conn, cur = pg_create_connection()
+    try:
+        cur.execute("DELETE FROM faq_pool WHERE id = %s", (faq_pool_id,))
+        conn.commit()
+
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="FAQPool not found")
+
+        return {"message": "FAQPool deleted successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting faq_pool: {e}")
+    finally:
+        cur.close()
+        conn.close()

@@ -1,9 +1,10 @@
+from typing import List
 import uuid
 from datetime import datetime
 import tracemalloc
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from src.faq import create_faq, search_faq
+from src.faq import FAQResponse, create_faq, search_faq
 from src.entity import FAQ, Chat
 from src.llm import llm_model
 from src.embedding import embedding_query
@@ -19,6 +20,16 @@ class SendChat(BaseModel):
     history_count: int = 6
 
 
+class Reference(BaseModel):
+    url: str
+    title: str  # List of
+
+
+class ChatResponse(BaseModel):
+    response: Chat
+    references: list[Reference] = []  # List of
+
+
 async def create_context(message: str):
     message_embedding = embedding_query(message)
 
@@ -26,37 +37,41 @@ async def create_context(message: str):
         collection_name="demo_collection",  # target collection
         data=[message_embedding],  # query vectors
         limit=5,  # number of returned entities
-        output_fields=["text", "subject"],  # specifies fields to be returned
+        # specifies fields to be returned
+        output_fields=["text", "subject", 'url', 'title'],
     )
     context_items = res[0]
+    reference = [
+        {"url": context_item['entity']['url'],
+            'title': context_item['entity']['title']}
+        for context_item in context_items]
     context = [item['entity']['text'] for item in context_items]
-    return context
+    return [context, reference]
 
 
 async def answer_with_rag_pipeline(chat: Chat):
-    context = await create_context(chat.message)
+    [context, reference] = await create_context(chat.message)
 
     db_chat_history = await get_chat_history(count=chat.history_count)
     chat_history = [(item.sender, item.message)
                     for item in db_chat_history]
 
     prompt_formatted = '''
-      You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
-      Question: {question}
-      Context: {context}
-      History:{history}
-      Answer: 
+        You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+        Question: {question}
+        Context: {context}
+        History:{history}
+        Answer: 
 
-      '''.format(
+        '''.format(
         question=chat.message, context=context, history=chat_history)
 
     llm_res = llm_model.invoke(prompt_formatted)
-    return llm_res
+    return [llm_res, reference]
 
 
 @router.get("/", response_model=list[Chat])
 async def get_chat_history(count=20):
-    print(count)
     conn, cur = pg_create_connection()
     try:
         cur.execute(
@@ -93,7 +108,7 @@ async def create_chat(chat: Chat):
         conn.close()
 
 
-@router.post("/send", response_model=Chat)
+@router.post("/send", response_model=ChatResponse)
 async def send_chat(chat: SendChat):
     similar_faq = search_faq(chat.message, 1)
 
@@ -101,7 +116,7 @@ async def send_chat(chat: SendChat):
         answer = str(similar_faq[0]['entity']['answer'])
     else:
 
-        llm_res = await answer_with_rag_pipeline(chat)
+        [llm_res, reference] = await answer_with_rag_pipeline(chat)
         answer = llm_res
 
         # save response to FAQ
@@ -115,7 +130,7 @@ async def send_chat(chat: SendChat):
     await create_chat(user_chat)
     await create_chat(system_chat)
 
-    return system_chat
+    return ChatResponse(response=system_chat, references=reference)
 
 
 @router.delete("/clear", response_model=bool)
@@ -135,11 +150,11 @@ async def clear_chat():
         conn.close()
 
 
-@router.post("/regenerate", response_model=Chat)
+@router.post("/regenerate", response_model=ChatResponse)
 async def regenerate_chat(chat: SendChat):
     conn, cur = pg_create_connection()
     try:
-        llm_res = await answer_with_rag_pipeline(chat)
+        [llm_res, context_items] = await answer_with_rag_pipeline(chat)
         answer = llm_res
 
         # save response to FAQ
@@ -167,7 +182,7 @@ async def regenerate_chat(chat: SendChat):
         await create_chat(user_chat)
         await create_chat(system_chat)
 
-        return system_chat
+        return ChatResponse(response=system_chat, references=context_items)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error regenerate chat: {e}")

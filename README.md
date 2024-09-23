@@ -1,7 +1,6 @@
 ---
-noteId: "6905a530769f11efa4add19c7c2db0fe"
+noteId: '6905a530769f11efa4add19c7c2db0fe'
 tags: []
-
 ---
 
 # Setup
@@ -22,7 +21,6 @@ bash standalone_embed.sh start
 
 ```
 
-
 ## Run Attu milvus UI
 
 ```sh
@@ -41,7 +39,6 @@ fastapi dev backend/main.py
 streamlit run frontend/gui.py
 ```
 
-
 ## Postgres tables
 
 ```sh
@@ -59,7 +56,7 @@ CREATE TABLE page_content (
 );
 
 
- 
+
 CREATE TABLE room (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -72,11 +69,19 @@ CREATE TABLE chat (
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
- 
+
+CREATE TABLE faq_pool (
+    id SERIAL PRIMARY KEY,
+    question VARCHAR(100) NOT NULL,
+    answer  TEXT NOT NULL,
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 ```
 
 ## Timeline
+
 28 day
 => 20 days
 
@@ -87,44 +92,44 @@ CREATE TABLE chat (
 - Đảnh: Crawl data QA
 
 - Phong: Migrate/Import data -> Keyword: chunking, search theo dense/ sparse
-==> Embedding được content
+  ==> Embedding được content
 
 - APP
-    + Khôi: Backend
-    + Nhân: Frontend
-        - Database .x
+
+  - Khôi: Backend
+  - Nhân: Frontend
+    - Database .x
 
 - Đạt: Benchmark
 
-
-
 #################
+
 # 26/9
 
-
 2. Data embedding: Phong
-  - Target: Toàn bộ dữ liệu được embedding: Title, content (text)
+
+- Target: Toàn bộ dữ liệu được embedding: Title, content (text)
 
 3. Backend: Khôi / Nhân
-  - Prompt: Đạt
-  - Human feedback: Khôi, Nhân
+
+- Prompt: Đạt
+- Human feedback: Khôi, Nhân
 
 4. Frontend: Nhân
-  - Regenerate
-  - Clear
-  - Human feedback - like / dislike 
+
+- Regenerate
+- Clear
+- Human feedback - like / dislike
 
 5. Benchmark: Đạt / Đảnh
-  - Raw data Q&A: Đảnh 
-    - Target: 1000 ~ 2000 QA gần nhất
 
+- Raw data Q&A: Đảnh
+  - Target: 1000 ~ 2000 QA gần nhất
 
-*****
-- Report 
+---
 
+- Report
 
 ## Ref
+
 - Diagram: https://drive.google.com/file/d/1Z9ETxum10o4LGWEoNcpxDxN5rzFS-ssS/view?usp=sharing
-
-
-
