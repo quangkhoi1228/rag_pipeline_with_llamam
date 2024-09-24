@@ -48,6 +48,9 @@ async def regenerate_response(message: models.Message) -> models.Assistant_Messa
     assit_message = models.Assistant_Message(**response)
     return assit_message
 
+# Clear chat
+async def clear_chat():
+    api_llm.make_request("clear_chat")
 
 # Change status of regenerate
 def regenerate():
@@ -66,8 +69,9 @@ def get_message():
 async def main():
     with st.sidebar:
         if st.button(":material/clear: Xoá hội thoại"):
-            print("clear")
+            clear_chat()
             st.session_state.messages = []
+            
     # Display chat messages from history on app rerun
     for message_history in st.session_state.messages:
         with st.chat_message(message_history["role"]):

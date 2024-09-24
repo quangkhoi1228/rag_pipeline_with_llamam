@@ -43,6 +43,7 @@ class API_LLM:
     FEATURES = {
         "send_message": "send_message",
         "regenerate_response": "regenerate_response",
+        "clear_chat": "clear_chat"
     }
 
     def __init__(self, host: str = "http://localhost:8000"):
@@ -55,6 +56,9 @@ class API_LLM:
 
         elif feature_name == self.FEATURES["regenerate_response"]:
             return await self.regenerate_response(body)
+        
+        elif feature_name == self.FEATURES["clear_chat"]:
+            return await self.clear_chat(body)
 
         raise Exception(f"Not found feature {feature_name}")
 
@@ -66,4 +70,9 @@ class API_LLM:
     async def regenerate_response(self, message: models.Message):
         request_url = Request_URL(url=f"{self.host}/chat/regenerate", method="POST")
         api = API(request_url, body=copy.deepcopy(message).to_dict())
+        return await api.make_request()
+    
+    async def clear_chat(self):
+        request_url = Request_URL(url=f"{self.host}/chat/clear", method="DELETE")
+        api = API(request_url)
         return await api.make_request()
