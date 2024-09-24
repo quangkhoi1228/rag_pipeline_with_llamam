@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, field_validator
 from src.util import convert_int_to_string
@@ -35,8 +36,8 @@ class Chat(BaseModel):
 
 
 class Feedback(BaseModel):
-    question: str
-    answer: str
+    faq_id: str
+    faq_pool_id: str
     feedback: str
     created_date: datetime = datetime.now()
 
@@ -56,6 +57,7 @@ class ChatResponse(BaseModel):
     response: Chat
     references: list[Reference] = []  # List of
     faq_id: Optional[int] = None
+    faq_pool_id: Optional[str] = None
 
     @field_validator('faq_id')
     def convert_id(cls, v):
@@ -80,3 +82,14 @@ class CreateFAQ(BaseModel):
 class CreateFAQPool(BaseModel):
     faq_id: str
     answer: str
+
+
+class FeedbackEnum(str, Enum):
+    good = "good"
+    bad = "bad"
+
+
+class SendFeedback(BaseModel):
+    faq_id: Optional[str] = "452739790167339002"
+    faq_pool_id: str = '65519a3b-1e9b-4feb-95ea-16a5ba46b37e'  # Auto-generated UUID
+    feedback: FeedbackEnum = FeedbackEnum.good

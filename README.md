@@ -79,6 +79,14 @@ CREATE TABLE faq_pool (
 );
 
 
+CREATE TABLE feedback (
+    faq_pool_id TEXT PRIMARY KEY,
+    feedback TEXT NOT NULL,
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
 ```
 
 ## Timeline

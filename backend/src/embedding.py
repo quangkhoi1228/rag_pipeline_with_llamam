@@ -1,4 +1,4 @@
-from pymilvus.model.hybrid import BGEM3EmbeddingFunction
+from pymilvus.model.hybrid import BGEM3EmbeddingFunction  # type: ignore
 
 embedding = BGEM3EmbeddingFunction(
     model_name='BAAI/bge-m3',  # Specify the model name

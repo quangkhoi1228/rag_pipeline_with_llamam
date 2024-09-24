@@ -124,18 +124,23 @@ async def regenerate_chat(chat: SendChat):
     context_items = []
     prev_faq_id = chat.faq_id
     faq_id = prev_faq_id
+    faq_pool_id = None
     conn, cur = pg_create_connection()
     try:
         faq_pools = await get_faq_pool_by_id(faq_id=prev_faq_id)
+        print(faq_pools)
         # return random faq from pool if reaching max faq bool, else using rag
         if len(faq_pools) <= MAX_FAQ_POOL - 1:
             [llm_res, context_items] = await answer_with_rag_pipeline(chat)
             answer = llm_res
             # insert faq bool
-            await create_faq_pool(CreateFAQPool(faq_id=prev_faq_id, answer=answer))
+            faq_pool = await create_faq_pool(CreateFAQPool(faq_id=prev_faq_id, answer=answer))
         else:
             faq_pool = await random_faq_from_faq_pool(faq_id=prev_faq_id)
+            print(faq_pool)
             answer = faq_pool.answer
+        print(faq_pool)
+        faq_pool_id = faq_pool.id
         # remove 2 lastest chat
         cur.execute(
             """WITH RowsToDelete AS (
@@ -158,7 +163,7 @@ async def regenerate_chat(chat: SendChat):
         await create_chat(user_chat)
         await create_chat(system_chat)
 
-        return ChatResponse(response=system_chat, references=context_items, faq_id=faq_id)
+        return ChatResponse(response=system_chat, references=context_items, faq_id=faq_id, faq_pool_id=faq_pool_id)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error regenerate chat: {e}")

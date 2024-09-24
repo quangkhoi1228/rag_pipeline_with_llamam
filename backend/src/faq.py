@@ -148,7 +148,7 @@ async def random_faq_from_faq_pool(faq_id: str):
         cur.execute(
             "select *  from faq_pool where faq_id=%s order by RANDOM() limit 1", (faq_id,))
         row = cur.fetchone()
-
+        print(row)
         faq_pool = FAQPool(
             id=row[0], faq_id=row[1], question=row[2], answer=row[3], created_date=row[4])
         return faq_pool
