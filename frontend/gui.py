@@ -64,7 +64,10 @@ def get_message():
 
 
 async def main():
-
+    with st.sidebar:
+        if st.button(":material/clear: Xoá hội thoại"):
+            print("clear")
+            st.session_state.messages = []
     # Display chat messages from history on app rerun
     for message_history in st.session_state.messages:
         with st.chat_message(message_history["role"]):
