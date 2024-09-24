@@ -43,7 +43,8 @@ class API_LLM:
     FEATURES = {
         "send_message": "send_message",
         "regenerate_response": "regenerate_response",
-        "clear_chat": "clear_chat"
+        "clear_chat": "clear_chat",
+        "feedback": "feedback"
     }
 
     def __init__(self, host: str = "http://localhost:8000"):
@@ -59,6 +60,9 @@ class API_LLM:
         
         elif feature_name == self.FEATURES["clear_chat"]:
             return await self.clear_chat()
+        
+        elif feature_name == self.FEATURES["feedback"]:
+            return await self.feedback(body)
 
         raise Exception(f"Not found feature {feature_name}")
 
@@ -75,4 +79,9 @@ class API_LLM:
     async def clear_chat(self):
         request_url = Request_URL(url=f"{self.host}/chat/clear", method="DELETE")
         api = API(request_url)
+        return await api.make_request()
+
+    async def feedback(self, feedback: models.Feedback):
+        request_url = Request_URL(url=f"{self.host}/feedback", method="POST")
+        api = API(request_url, body=feedback.to_dict())
         return await api.make_request()

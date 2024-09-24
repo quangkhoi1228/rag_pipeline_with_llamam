@@ -15,6 +15,10 @@ if "messages" not in st.session_state:
 if "regenerate" not in st.session_state:
     st.session_state.regenerate = False
 
+# Initalize chat feedback
+if "feedback" not in st.session_state:
+    st.session_state.feedback = {"is_feedbacked": False, "feedback": None}
+
 
 # Streamed response emulator
 def response_generator(content: models.Assistant_Message):
@@ -49,15 +53,15 @@ async def regenerate_response(message: models.Message) -> models.Assistant_Messa
     return assit_message
 
 
+# Regenerate response
+async def feedback(feedback: models.Feedback):
+    print(feedback.to_dict())
+    await api_llm.make_request("feedback", feedback)
+
+
 # Clear chat
 async def clear_chat():
     await api_llm.make_request("clear_chat")
-
-
-# Change status of regenerate
-def regenerate():
-    st.session_state.regenerate = True
-    st.session_state.messages.pop()
 
 
 # Get last message
@@ -65,7 +69,51 @@ def get_message():
     return models.Message(
         message=st.session_state.messages[-1]["content"],
         history_count=len(st.session_state.messages),
+        faq_id=st.session_state.messages[-1]["faq_id"],
     )
+
+
+# Check that response have feedback
+def is_feedbacked():
+    assistant_respone = st.session_state.messages[-1]
+    if assistant_respone["feedback"] is not None:
+        return True
+    else:
+        return False
+
+
+# =============================== Button Function ============================================
+# Change status of regenerate
+def regenerate():
+    st.session_state.regenerate = True
+    st.session_state.messages.pop()
+
+
+# Like button
+def like():
+    assistant_respone = st.session_state.messages[-1]
+    st.session_state.feedback = {
+        "is_feedbacked": True,
+        "feedback": models.Feedback(
+            assistant_respone["faq_id"], assistant_respone["faq_pool_id"], "good"
+        ),
+    }
+    st.session_state.messages[-1] = {**st.session_state.messages[-1], feedback: "good"}
+
+
+# Dislike button
+def dislike():
+    assistant_respone = st.session_state.messages[-1]
+    st.session_state.feedback = {
+        "is_feedbacked": True,
+        "feedback": models.Feedback(
+            assistant_respone["faq_id"], assistant_respone["faq_pool_id"], "bad"
+        ),
+    }
+    st.session_state.messages[-1] = {
+        **st.session_state.messages[-1],
+        feedback: "bad",
+    }
 
 
 async def main():
@@ -82,6 +130,7 @@ async def main():
     # When user click regenerate
     if st.session_state.regenerate:
         # Reset variable
+        st.session_state.feedback = {"is_feedbacked": False, "feedback": None}
         st.session_state.regenerate = False
 
         with st.chat_message("assistant"):
@@ -92,17 +141,30 @@ async def main():
             full_response = st.write_stream(response_generator(assist_response))
             # Add assistant response to chat history
             st.session_state.messages.append(
-                {"role": "assistant", "content": full_response}
+                {
+                    "role": "assistant",
+                    "content": full_response,
+                    "faq_id": assist_response.faq_id,
+                    "faq_pool_id": assist_response.faq_pool_id,
+                    "feedback": None,
+                }
             )
+
+    # When user click feedback
+    if st.session_state.feedback["is_feedbacked"]:
+        await feedback(st.session_state.feedback["feedback"])
 
     # Accept user input
     if prompt := st.chat_input("Hãy hỏi gì đó đi"):
+        st.session_state.feedback = {"is_feedbacked": False, "feedback": None}
         # Display user message in chat message container
         with st.chat_message("user"):
             st.markdown(prompt)
 
             # Add user message to chat history
-            st.session_state.messages.append({"role": "user", "content": prompt})
+            st.session_state.messages.append(
+                {"role": "user", "content": prompt, "faq_id": ""}
+            )
 
         # Display assistant response in chat message container
         with st.chat_message("assistant"):
@@ -113,9 +175,22 @@ async def main():
                 assist_response = await send_message(message)
 
             full_response = st.write_stream(response_generator(assist_response))
+
+            st.session_state.messages[-1] = {
+                **st.session_state.messages[-1],
+                "faq_id": assist_response.faq_id,
+            }
+
+            print(st.session_state.messages[-1])
             # Add assistant response to chat history
             st.session_state.messages.append(
-                {"role": "assistant", "content": full_response}
+                {
+                    "role": "assistant",
+                    "content": full_response,
+                    "faq_id": assist_response.faq_id,
+                    "faq_pool_id": assist_response.faq_pool_id,
+                    "feedback": None,
+                }
             )
 
     if len(st.session_state.messages) > 0:
@@ -125,10 +200,15 @@ async def main():
                 ":material/replay:", help="Tạo lại câu trả lời", on_click=regenerate
             )
 
-            # TODO: Like
-            st.button(":material/thumb_up_alt:", help="Câu này được đấy")
-            # TODO: Dislike
-            st.button(":material/thumb_down_alt:", help="Hmm, còn hơi non")
+            if not st.session_state.feedback["is_feedbacked"]:
+                st.button(
+                    ":material/thumb_up_alt:", help="Câu này được đấy", on_click=like
+                )
+                st.button(
+                    ":material/thumb_down_alt:",
+                    help="Hmm, còn hơi non",
+                    on_click=dislike,
+                )
 
 
 if __name__ == "__main__":
