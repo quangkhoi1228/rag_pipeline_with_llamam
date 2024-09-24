@@ -49,7 +49,7 @@ class API_LLM:
     def __init__(self, host: str = "http://localhost:8000"):
         self.host = host
 
-    async def make_request(self, feature_name: str, body: any):
+    async def make_request(self, feature_name: str, body: any = None):
 
         if feature_name == self.FEATURES["send_message"]:
             return await self.send_message(body)
@@ -58,7 +58,7 @@ class API_LLM:
             return await self.regenerate_response(body)
         
         elif feature_name == self.FEATURES["clear_chat"]:
-            return await self.clear_chat(body)
+            return await self.clear_chat()
 
         raise Exception(f"Not found feature {feature_name}")
 
