@@ -23,16 +23,18 @@ if "feedback" not in st.session_state:
 # Streamed response emulator
 def response_generator(content: models.Assistant_Message):
     message_content = content.response["message"]
-    ref = content.references
-    i = 1
+    
+    # References for RAG
+    # ref = content.references
+    # i = 1
 
-    if len(ref) > 0:
-        message_content += "  \n  Tham khảo tại:  \n"
-        for ref_content in ref:
-            message_content += (
-                f"[{i}]. {ref_content['title']} ({ref_content['url']})  \n"
-            )
-            i += 1
+    # if len(ref) > 0:
+    #     message_content += "  \n  Tham khảo tại:  \n"
+    #     for ref_content in ref:
+    #         message_content += (
+    #             f"[{i}]. {ref_content['title']} ({ref_content['url']})  \n"
+    #         )
+    #         i += 1
 
     for word in message_content.split(" "):
         yield word + " "
