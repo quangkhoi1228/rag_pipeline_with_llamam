@@ -28,7 +28,11 @@ async def create_context(message: str):
         {"url": context_item['entity']['url'],
          'title': context_item['entity']['title']}
         for context_item in context_items]
-    context = [item['entity']['text'] for item in context_items]
+    context = [f"""post {index}: 
+               - context {item['entity']['text']}
+               - url: {item['entity']['url']}
+               ---
+               """ for index, item in enumerate(context_items)]
     return [context, reference]
 
 
@@ -40,7 +44,7 @@ async def answer_with_rag_pipeline(chat: Chat):
                     for item in db_chat_history]
 
     prompt_formatted = '''
-        You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+        You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. If you know return both answer and reference document (title and document url link) in user language. Use three sentences maximum and keep the answer concise.
         Question: {question}
         Context: {context}
         History:{history}
