@@ -110,6 +110,7 @@ async def send_chat(chat: SendChat):
         # faq = FAQ(question=chat.message, answer=answer)
         # create_faq(faq)
 
+        # data null
     user_chat = Chat(message=chat.message, sender='user')
     system_chat = Chat(message=answer, sender='system')
 

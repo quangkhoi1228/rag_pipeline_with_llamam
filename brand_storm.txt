@@ -94,3 +94,31 @@ Answer: Answer 1
 
 
 
+
+khi em hỏi 
+1.  câu trả lời trong faq -> câu trả lời
+
+2. ko có -> dùng LLM generate 1 câu trả lời mớ
+
+ kih hõi -> FAQ có trong câu tl thì trả về 
+ ko có -> tạo 1 câu mới 
+  trả lời tối đa 10 câu trả lời thôi 
+  -: khi đủ 10 random trong 10 câu
+
+
+
+1. khi em hỏi 
+
+-> có faq ko 
+có -> trả về luôn
+
+-> không -> tạo câu mới tối đa 10 câu, nếu có 10 câu rồi thì trả về random 
+
+
+
+
+
+
+
+
+
