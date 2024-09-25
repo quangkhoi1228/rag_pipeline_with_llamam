@@ -6,3 +6,4 @@ Volumes
 __pycache__
 backend/__pycache__
 /.vscode
+/volumes
