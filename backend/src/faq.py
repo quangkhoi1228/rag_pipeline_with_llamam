@@ -3,7 +3,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, HTTPException
 from src.database import milvus_db, pg_create_connection
 from src.embedding import embedding_document, embedding_query
-from src.entity import FAQ, CreateFAQPool, FAQPool
+from src.entity import FAQ, CreateFAQ, CreateFAQPool, FAQPool
 from src.util import convert_int_to_string, generate_uuid
 
 router = APIRouter()
@@ -36,8 +36,8 @@ def get_faq(count=5):
     return res
 
 
-@router.post("/", response_model=FAQ)
-def create_faq(faq: FAQ):
+@router.post("/", response_model=CreateFAQ)
+def create_faq(faq: CreateFAQ):
 
     docs_embeddings = embedding_document([faq.question])
     vector = docs_embeddings[0]
@@ -45,11 +45,20 @@ def create_faq(faq: FAQ):
     data = [{"question": faq.question, "vector": vector, "answer": faq.answer}]
 
     res = milvus_db.insert(collection_name="faq_collection", data=data)
-
     return faq
 
 
+@router.delete("/{faq_id}")
+def delete_faq(faq_id: str):
+    res = milvus_db.delete(
+        collection_name="faq_collection",
+        filter=f"id in [{faq_id}]"
+    )
+
+    return res
 # FAQ pool
+
+
 @router.post("/pool", response_model=FAQPool)
 async def create_faq_pool(create_faq_pool: CreateFAQPool):
 
