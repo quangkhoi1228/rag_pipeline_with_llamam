@@ -28,7 +28,7 @@ async def create_context(message: str):
         {"url": context_item['entity']['url'],
          'title': context_item['entity']['title']}
         for context_item in context_items]
-    context = [f"""post {index}: 
+    context = [f"""post {index}:
                - context {item['entity']['text']}
                - url: {item['entity']['url']}
                ---
@@ -133,7 +133,7 @@ async def regenerate_chat(chat: SendChat):
     conn, cur = pg_create_connection()
     try:
         faq_pools = await get_faq_pool_by_id(faq_id=prev_faq_id)
-        print(faq_pools)
+
         # return random faq from pool if reaching max faq bool, else using rag
         if len(faq_pools) <= MAX_FAQ_POOL - 1:
             [llm_res, context_items] = await answer_with_rag_pipeline(chat)
@@ -142,9 +142,8 @@ async def regenerate_chat(chat: SendChat):
             faq_pool = await create_faq_pool(CreateFAQPool(faq_id=prev_faq_id, answer=answer))
         else:
             faq_pool = await random_faq_from_faq_pool(faq_id=prev_faq_id)
-            print(faq_pool)
+
             answer = faq_pool.answer
-        print(faq_pool)
         faq_pool_id = faq_pool.id
         # remove 2 lastest chat
         cur.execute(

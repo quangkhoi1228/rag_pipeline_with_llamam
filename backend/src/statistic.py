@@ -26,7 +26,7 @@ async def get_statistic_data():
 
         all_faq = get_faq(1000)
         faq_ids = [f"{str(faq['id'])}" for faq in all_faq]
-        print(faq_ids)
+        # print(faq_ids)
         cur.execute(f"""
                     with statistic as (
                     SELECT f.faq_id ,f.faq_pool_id ,
@@ -69,7 +69,7 @@ async def update_faq_from_statistic_data():
             top_1[statistic.faq_id] = statistic
 
     for top_1_item in top_1.values():
-        print(top_1_item)
+        # print(top_1_item)
         faq = CreateFAQ(question=top_1_item.question, answer=top_1_item.answer)
         delete_faq(top_1_item.faq_id)
         await delete_faq_pool_by_faq_id(top_1_item.faq_id)

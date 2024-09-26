@@ -1,7 +1,8 @@
 import asyncio
 import time
 import streamlit as st
-import models, api
+import models
+import api
 from component import st_horizontal
 
 api_llm = api.API_LLM()
@@ -23,7 +24,7 @@ if "feedback" not in st.session_state:
 # Streamed response emulator
 def response_generator(content: models.Assistant_Message):
     message_content = content.response["message"]
-    
+
     # References for RAG
     # ref = content.references
     # i = 1
@@ -57,7 +58,7 @@ async def regenerate_response(message: models.Message) -> models.Assistant_Messa
 
 # Regenerate response
 async def feedback(feedback: models.Feedback):
-    print(feedback.to_dict())
+
     await api_llm.make_request("feedback", feedback)
 
 
@@ -100,7 +101,8 @@ def like():
             assistant_respone["faq_id"], assistant_respone["faq_pool_id"], "good"
         ),
     }
-    st.session_state.messages[-1] = {**st.session_state.messages[-1], feedback: "good"}
+    st.session_state.messages[-1] = {**
+                                     st.session_state.messages[-1], feedback: "good"}
 
 
 # Dislike button
@@ -140,7 +142,8 @@ async def main():
             with st.spinner("Thinking..."):
                 assist_response = await regenerate_response(message)
 
-            full_response = st.write_stream(response_generator(assist_response))
+            full_response = st.write_stream(
+                response_generator(assist_response))
             # Add assistant response to chat history
             st.session_state.messages.append(
                 {
@@ -176,7 +179,8 @@ async def main():
             with st.spinner("Thinking..."):
                 assist_response = await send_message(message)
 
-            full_response = st.write_stream(response_generator(assist_response))
+            full_response = st.write_stream(
+                response_generator(assist_response))
 
             st.session_state.messages[-1] = {
                 **st.session_state.messages[-1],
