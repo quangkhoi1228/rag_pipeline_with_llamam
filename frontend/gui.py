@@ -20,6 +20,10 @@ if "regenerate" not in st.session_state:
 if "feedback" not in st.session_state:
     st.session_state.feedback = {"is_feedbacked": False, "feedback": None}
 
+# Initalize chat history
+if "is_first_time" not in st.session_state:
+    st.session_state.is_first_time = True
+
 
 # Streamed response emulator
 def response_generator(content: models.Assistant_Message):
@@ -58,8 +62,14 @@ async def regenerate_response(message: models.Message) -> models.Assistant_Messa
 
 # Regenerate response
 async def feedback(feedback: models.Feedback):
-
     await api_llm.make_request("feedback", feedback)
+
+
+# Get messages history
+async def messages_history() -> list[models.Assistant_Respone]:
+    response_list = await api_llm.make_request("messages_history")
+    assit_message = [models.Assistant_Respone(**response) for response in response_list]
+    return assit_message
 
 
 # Clear chat
@@ -121,6 +131,28 @@ def dislike():
 
 
 async def main():
+    if st.session_state.is_first_time:
+        with st.spinner("Waitting"):
+            history = await messages_history()
+        for message in history:
+            chat_box = {}
+            if message.sender == "user":
+                chat_box = {
+                    "role": "user",
+                    "content": message.message,
+                    "faq_id": None,
+                }
+            else:
+                chat_box = {
+                    "role": "assistant",
+                    "content": message.message,
+                    "faq_id": None,
+                    "faq_pool_id": None,
+                    "feedback": None,
+                }
+            st.session_state.messages.append(chat_box)
+        st.session_state.is_first_time = False
+
     with st.sidebar:
         if st.button(":material/clear: Xoá hội thoại"):
             st.session_state.messages = []
@@ -199,7 +231,10 @@ async def main():
                 }
             )
 
-    if len(st.session_state.messages) > 0:
+    if (
+        len(st.session_state.messages) > 0
+        and st.session_state.messages[-1]["faq_id"] is not None
+    ):
         with st_horizontal():
             # Regenerate response of assistant
             st.button(
