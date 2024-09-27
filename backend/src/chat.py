@@ -33,23 +33,25 @@ async def create_context(message: str):
 
 
 async def answer_with_rag_pipeline(chat: Chat):
-    [context, reference] = await create_context(chat.message)
+    # [context, reference] = await create_context(chat.message)
 
-    db_chat_history = await get_chat_history(count=chat.history_count)
-    chat_history = [(item.sender, item.message)
-                    for item in db_chat_history]
+    # db_chat_history = await get_chat_history(count=chat.history_count)
+    # chat_history = [(item.sender, item.message)
+    #                 for item in db_chat_history]
 
-    prompt_formatted = '''
-        You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
-        Question: {question}
-        Context: {context}
-        History:{history}
-        Answer:
+    # prompt_formatted = '''
+    #     You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+    #     Question: {question}
+    #     Context: {context}
+    #     History:{history}
+    #     Answer:
 
-        '''.format(
-        question=chat.message, context=context, history=chat_history)
+    #     '''.format(
+    #     question=chat.message, context=context, history=chat_history)
 
-    llm_res = llm_model.invoke(prompt_formatted)
+    # llm_res = llm_model.invoke(prompt_formatted)
+
+    ### Search for context
     return [llm_res, reference]
 
 
