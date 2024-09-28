@@ -69,11 +69,11 @@ def load_data(folder):
     return df
 
 
-def insert_to_collection(df, collection, batch_size=1000):
+def insert_to_collection(df, collection, batch_size=20):
     for i in tqdm(range(0, len(df), batch_size)):
-        print(f"Inserting {i}-{i+batch_size}...")
+        end_idx = min(len(df), i + batch_size)
         collection.insert(
-            df.iloc[i : i + batch_size][
+            df.iloc[i : end_idx][
                 [
                     "url",
                     "title_sparse",
@@ -89,7 +89,11 @@ def insert_to_collection(df, collection, batch_size=1000):
         )
 
 ## Init milvus connection
-connections.connect(**DB_CONNECT)
+connections.connect(host = "milvus.kiki.zalo.services",
+                   port = 443,
+                   secure = True,
+                   db_name = "datltt_test",
+                  )
 
 client = MilvusClient(**DB_CONNECT)
 
@@ -108,13 +112,18 @@ schema = CollectionSchema(fields=fields, enable_dynamic_field=False)
 
 collection_name = "thu_vien_phap_luat"
 
+# collection = Collection(name=collection_name, schema=schema, consistency_level="Bounded")
+# collection.drop()
+# sys.exit()
+
 if not client.has_collection(collection_name=collection_name):
     collection = Collection(name=collection_name, schema=schema, consistency_level="Bounded")
     dense_index = {
-        "index_type": "HNSW",
+        "index_type": "IVF_FLAT",
         "metric_type": "COSINE",
-        "M": 64,
-        "efConstruction": 80,
+        "params": {
+            "nlist": 1024
+        }
     }
     collection.create_index("title_dense", dense_index)
     collection.create_index("content_dense", dense_index)
