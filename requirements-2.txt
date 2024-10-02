@@ -10,3 +10,7 @@ fastapi
 milvus-model
 pymilvus
 scipy==1.13.1
+langchain-ollama
+langchain
+langchain_community
+ollama

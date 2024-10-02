@@ -11,7 +11,7 @@ from pymilvus import (
     MilvusClient
 )
 import pandas as pd
-from config import DB_CONNECT
+from env_config import config
 from model import DataUpload
 import torch
 import pickle
@@ -89,13 +89,9 @@ def insert_to_collection(df, collection, batch_size=20):
         )
 
 ## Init milvus connection
-connections.connect(host = "milvus.kiki.zalo.services",
-                   port = 443,
-                   secure = True,
-                   db_name = "datltt_test",
-                  )
+connections.connect(**config.DB_CONNECT)
 
-client = MilvusClient(**DB_CONNECT)
+client = MilvusClient(**config.DB_CONNECT)
 
 fields = [
     FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),

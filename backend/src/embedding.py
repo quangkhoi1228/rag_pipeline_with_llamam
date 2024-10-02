@@ -3,7 +3,6 @@ import torch
 
 device= 'cuda' if torch.cuda.is_available() else 'cpu'
 
-
 embedding = BGEM3EmbeddingFunction(
     'BAAI/bge-m3',  # Specify the model name
     device=device,  # Specify the device to use, e.g., 'cpu' or 'cuda:0'

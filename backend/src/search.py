@@ -1,11 +1,10 @@
 from pymilvus import AnnSearchRequest
-from pymilvus.model.hybrid import BGEM3EmbeddingFunction
 from pymilvus import RRFRanker
 from embedding import embedding
 
 rerank = RRFRanker()
 
-def query(collection, text, limit=3):
+def search(collection, text, limit=3):
     query_embeds = embedding.encode_queries([text])
 
     title_sparse_search_params = {
@@ -65,3 +64,5 @@ def query(collection, text, limit=3):
         output_fields=["id", "title", "content_text", "url"],
     )
     return res
+
+
