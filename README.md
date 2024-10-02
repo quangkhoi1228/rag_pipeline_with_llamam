@@ -79,12 +79,14 @@ CREATE TABLE faq_pool (
 );
 
 
-CREATE TABLE feedback (
-    faq_pool_id TEXT PRIMARY KEY,
-    feedback TEXT NOT NULL,
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public.feedback (
+  faq_id text NULL,
+  faq_pool_id text NULL,
+  feedback text NOT NULL,
+  created_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  handled bool DEFAULT false NOT NULL,
+  updated_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-
 
 
 ```

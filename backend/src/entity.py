@@ -5,6 +5,11 @@ from pydantic import BaseModel, field_validator
 from src.util import convert_int_to_string
 
 
+class FeedbackEnum(str, Enum):
+    good = "good"
+    bad = "bad"
+
+
 class Room(BaseModel):
     id: str = None  # Auto-generated UUID
     name: str
@@ -40,6 +45,8 @@ class Feedback(BaseModel):
     faq_pool_id: str
     feedback: str
     created_date: datetime = datetime.now()
+    handled: bool = False
+    updated_date: datetime = datetime.now()
 
 
 class SendChat(BaseModel):
@@ -84,12 +91,17 @@ class CreateFAQPool(BaseModel):
     answer: str
 
 
-class FeedbackEnum(str, Enum):
-    good = "good"
-    bad = "bad"
-
-
 class SendFeedback(BaseModel):
     faq_id: Optional[str] = "452739790167339002"
     faq_pool_id: str = '65519a3b-1e9b-4feb-95ea-16a5ba46b37e'  # Auto-generated UUID
     feedback: FeedbackEnum = FeedbackEnum.good
+
+
+class Statistic(BaseModel):
+    faq_id: str
+    faq_pool_id: str
+    good_count: int
+    bad_count: int
+    point: int
+    question: str
+    answer: str

@@ -28,30 +28,32 @@ async def create_context(message: str):
         {"url": context_item['entity']['url'],
          'title': context_item['entity']['title']}
         for context_item in context_items]
-    context = [item['entity']['text'] for item in context_items]
+    context = [f"""post {index}:
+               - context {item['entity']['text']}
+               - url: {item['entity']['url']}
+               ---
+               """ for index, item in enumerate(context_items)]
     return [context, reference]
 
 
 async def answer_with_rag_pipeline(chat: Chat):
-    # [context, reference] = await create_context(chat.message)
+    [context, reference] = await create_context(chat.message)
 
-    # db_chat_history = await get_chat_history(count=chat.history_count)
-    # chat_history = [(item.sender, item.message)
-    #                 for item in db_chat_history]
+    db_chat_history = await get_chat_history(count=chat.history_count)
+    chat_history = [(item.sender, item.message)
+                    for item in db_chat_history]
 
-    # prompt_formatted = '''
-    #     You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
-    #     Question: {question}
-    #     Context: {context}
-    #     History:{history}
-    #     Answer:
+    prompt_formatted = '''
+        You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. If you know return both answer and reference document (title and document url link) in user language. Use three sentences maximum and keep the answer concise.
+        Question: {question}
+        Context: {context}
+        History:{history}
+        Answer:
 
-    #     '''.format(
-    #     question=chat.message, context=context, history=chat_history)
+        '''.format(
+        question=chat.message, context=context, history=chat_history)
 
-    # llm_res = llm_model.invoke(prompt_formatted)
-
-    ### Search for context
+    llm_res = llm_model.invoke(prompt_formatted)
     return [llm_res, reference]
 
 
@@ -112,6 +114,7 @@ async def send_chat(chat: SendChat):
         # faq = FAQ(question=chat.message, answer=answer)
         # create_faq(faq)
 
+        # data null
     user_chat = Chat(message=chat.message, sender='user')
     system_chat = Chat(message=answer, sender='system')
 
@@ -130,7 +133,7 @@ async def regenerate_chat(chat: SendChat):
     conn, cur = pg_create_connection()
     try:
         faq_pools = await get_faq_pool_by_id(faq_id=prev_faq_id)
-        print(faq_pools)
+
         # return random faq from pool if reaching max faq bool, else using rag
         if len(faq_pools) <= MAX_FAQ_POOL - 1:
             [llm_res, context_items] = await answer_with_rag_pipeline(chat)
@@ -139,9 +142,8 @@ async def regenerate_chat(chat: SendChat):
             faq_pool = await create_faq_pool(CreateFAQPool(faq_id=prev_faq_id, answer=answer))
         else:
             faq_pool = await random_faq_from_faq_pool(faq_id=prev_faq_id)
-            print(faq_pool)
+
             answer = faq_pool.answer
-        print(faq_pool)
         faq_pool_id = faq_pool.id
         # remove 2 lastest chat
         cur.execute(
