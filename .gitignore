@@ -9,3 +9,5 @@ backend/__pycache__
 /volumes
 backend/features
 backend/test_data
+.idea
+*.xml
