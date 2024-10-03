@@ -168,3 +168,12 @@ async def random_faq_from_faq_pool(faq_id: str):
     finally:
         cur.close()
         conn.close()
+
+
+def check_faq_exist(question):
+    similar_faq = search_faq(question, 1)
+
+    if len(similar_faq) > 0 and similar_faq[0]['distance'] >= 0.8:
+        return True
+    else:
+        return False

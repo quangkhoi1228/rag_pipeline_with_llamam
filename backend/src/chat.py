@@ -36,7 +36,7 @@ async def create_context(message: str):
     return [context, reference]
 
 
-async def answer_with_rag_pipeline(chat: Chat):
+async def answer_with_rag_pipeline(chat: SendChat):
     [context, reference] = await create_context(chat.message)
 
     db_chat_history = await get_chat_history(count=chat.history_count)

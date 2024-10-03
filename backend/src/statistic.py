@@ -3,14 +3,20 @@ from apscheduler.triggers.cron import CronTrigger
 import time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import pandas as pd
+from sklearn.cluster import DBSCAN
 
 
 from fastapi import APIRouter, HTTPException
 
-from src.faq import create_faq, delete_faq, delete_faq_pool_by_faq_id, get_faq
-from src.entity import FAQ, CreateFAQ, Statistic
+from src.chat import answer_with_rag_pipeline
+from src.embedding import embedding_document
+from src.faq import check_faq_exist, create_faq, delete_faq, delete_faq_pool_by_faq_id, get_faq
+from src.entity import FAQ, Chat, CreateFAQ, SendChat, Statistic
 from src.database import pg_create_connection
 from src.config import STATISTIC_INTERVAL
+from src.llm import llm_model
+import json
+
 
 router = APIRouter()
 
@@ -77,9 +83,92 @@ async def update_faq_from_statistic_data():
     return True
 
 
+async def get_user_chat_history():
+    conn, cur = pg_create_connection()
+    try:
+        cur.execute(
+            f"SELECT * FROM chat where sender = 'user' ")
+        chats_data = cur.fetchall()
+
+        chats = [Chat(message=row[0], sender=row[1], created_at=row[2])
+                 for row in chats_data]
+        return chats
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error getting user chats: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+
+def cluster_user_messages(messages):
+    question_embeddings = embedding_document(messages)
+    # Create a DBSCAN clustering model
+    clustering_model = DBSCAN(eps=0.5, min_samples=2, metric='cosine')
+
+    # Fit the model and predict the cluster for each question
+    cluster_labels = clustering_model.fit_predict(question_embeddings)
+
+    cluster_dict = {}
+    # Print out the clusters
+    for i, cluster in enumerate(cluster_labels):
+        key = str(cluster)
+        if key not in cluster_dict:
+            cluster_dict[key] = []
+
+        if messages[i] not in cluster_dict[key]:
+            cluster_dict[key].append(messages[i])
+
+    return cluster_dict.values()
+
+
+def detect_new_faq(clusters):
+    prompt = '''
+    You are an assistant for decision tasks based on the provided questions. Always respond in strict JSON format. Do not provide any explanations or text outside the JSON structure.
+
+    Look at all the questions: {questions}. Analyze their content to determine their overall theme and relevance to the subject matter.
+
+    Return a JSON object (not an array) in the following format:
+    {{
+    "valid": true if all questions are related to law and systems, else return false,
+    "question": "The most related question (one of them)  in these provided questions"
+    }}
+    '''
+    new_faqs_question = []
+    for cluster in clusters:
+        prompt_formatted = prompt.format(questions=cluster)
+        res = llm_model.invoke(prompt_formatted).strip().replace('\n', '')
+        print(res)
+        try:
+            json_data = json.loads(res)
+            # print(prompt_formatted)
+            if json_data['valid'] == True and check_faq_exist(json_data['question']) == False:
+                new_faqs_question.append(json_data)
+        except Exception as e:
+            print(e)
+    return new_faqs_question
+
+
+@router.patch("/widen-faq", response_model=bool)
+async def widen_faq_from_user_chat():
+    user_history = await get_user_chat_history()
+    messages = [chat.message.strip().replace('\n', '')
+                for chat in user_history]
+    clusters = cluster_user_messages(messages)
+    new_faqs_question = detect_new_faq(clusters)
+    print(new_faqs_question)
+
+    for faq_question in new_faqs_question:
+        [llm_res, reference] = await answer_with_rag_pipeline(SendChat(message=faq_question['question']))
+        answer = llm_res
+        create_faq(CreateFAQ(question=faq_question['question'], answer=answer))
+    return True
+
+
 async def scheduled_task():
     print(f"Task executed at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     await update_faq_from_statistic_data()
+    await widen_faq_from_user_chat()
 
 
 # Create an APScheduler instance
@@ -88,6 +177,6 @@ async def scheduled_task():
 def start_scheduler():
     scheduler = AsyncIOScheduler()
     # Add the scheduled task with an interval of 10 seconds
-    scheduler.add_job(scheduled_task, "interval", minutes=STATISTIC_INTERVAL)
+    scheduler.add_job(scheduled_task, "interval", seconds=STATISTIC_INTERVAL)
     scheduler.start()
     return scheduler
