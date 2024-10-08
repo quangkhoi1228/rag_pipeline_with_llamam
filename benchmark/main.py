@@ -19,7 +19,7 @@ from langchain_community.embeddings import OllamaEmbeddings
 # def clean_qa_data(data: List[Dict]) -> List[Dict]:
 #     return [{ 'question': e['question'], 'answer': e['answers'][0]['body'] } for e in data]
 
-# qa_data = [load_qa_data("benchmark/thread_p180000-189999")[0]]
+# qa_data = [load_qa_data("benchmark/thread_p180000-189999.jsonl")[0]]
 # cleaned_qa_data = clean_qa_data(qa_data)
 
 critic_llm = ChatOllama(model="llama3.1")

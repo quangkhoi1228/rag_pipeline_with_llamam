@@ -44,7 +44,8 @@ class API_LLM:
         "send_message": "send_message",
         "regenerate_response": "regenerate_response",
         "clear_chat": "clear_chat",
-        "feedback": "feedback"
+        "feedback": "feedback",
+        "messages_history": "messages_history",
     }
 
     def __init__(self, host: str = "http://localhost:8000"):
@@ -57,12 +58,15 @@ class API_LLM:
 
         elif feature_name == self.FEATURES["regenerate_response"]:
             return await self.regenerate_response(body)
-        
+
         elif feature_name == self.FEATURES["clear_chat"]:
             return await self.clear_chat()
-        
+
         elif feature_name == self.FEATURES["feedback"]:
             return await self.feedback(body)
+
+        elif feature_name == self.FEATURES["messages_history"]:
+            return await self.messages_history()
 
         raise Exception(f"Not found feature {feature_name}")
 
@@ -75,7 +79,7 @@ class API_LLM:
         request_url = Request_URL(url=f"{self.host}/chat/regenerate", method="POST")
         api = API(request_url, body=copy.deepcopy(message).to_dict())
         return await api.make_request()
-    
+
     async def clear_chat(self):
         request_url = Request_URL(url=f"{self.host}/chat/clear", method="DELETE")
         api = API(request_url)
@@ -84,4 +88,9 @@ class API_LLM:
     async def feedback(self, feedback: models.Feedback):
         request_url = Request_URL(url=f"{self.host}/feedback", method="POST")
         api = API(request_url, body=feedback.to_dict())
+        return await api.make_request()
+
+    async def messages_history(self):
+        request_url = Request_URL(url=f"{self.host}/chat", method="GET")
+        api = API(request_url, params={'count': 20})
         return await api.make_request()

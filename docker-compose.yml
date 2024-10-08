@@ -4,6 +4,7 @@ services:
   etcd:
     container_name: milvus-etcd
     image: quay.io/coreos/etcd:v3.5.5
+    network_mode: "host"
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
       - ETCD_AUTO_COMPACTION_RETENTION=1000
@@ -24,9 +25,10 @@ services:
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
-    ports:
-      - "9001:9001"
-      - "9000:9000"
+    network_mode: "host"
+    # ports:
+    #   - "9001:9001"
+    #   - "9000:9000"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
     command: minio server /minio_data --console-address ":9001"
@@ -40,11 +42,12 @@ services:
     container_name: milvus-standalone
     image: milvusdb/milvus:v2.4.11
     command: ["milvus", "run", "standalone"]
+    network_mode: "host"
     security_opt:
     - seccomp:unconfined
     environment:
-      ETCD_ENDPOINTS: etcd:2379
-      MINIO_ADDRESS: minio:9000
+      ETCD_ENDPOINTS: localhost:2379
+      MINIO_ADDRESS: localhost:9000
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
     healthcheck:
@@ -53,9 +56,9 @@ services:
       start_period: 90s
       timeout: 20s
       retries: 3
-    ports:
-      - "19530:19530"
-      - "9091:9091"
+    # ports:
+    #   - "19530:19530"
+    #   - "9091:9091"
     depends_on:
       - "etcd"
       - "minio"
@@ -64,8 +67,5 @@ services:
     container_name: milvus-attu
     image: zilliz/attu:v2.2.8
     environment:
-      - MILVUS_URL=milvus-standalone:19530
-
-networks:
-  default:
-    name: milvus
+      - MILVUS_URL=localhost:19530
+    network_mode: "host"
