@@ -65,7 +65,7 @@ class Benchmark:
 
                 results.append(result)
 
-                file.write(json.dumps(result) + "\n")
+                file.write(json.dumps(result, ensure_ascii=False) + "\n")
                 file.flush()
 
         return result

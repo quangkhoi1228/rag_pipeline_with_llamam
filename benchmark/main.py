@@ -1,3 +1,4 @@
+import json
 import os
 from ragas import evaluate, RunConfig
 from ragas.metrics import faithfulness, answer_correctness, answer_relevancy, answer_similarity, context_recall
@@ -5,7 +6,7 @@ from ragas.metrics import faithfulness, answer_correctness, answer_relevancy, an
 from langchain_community.embeddings import CohereEmbeddings
 from langchain_community.llms import Cohere
 
-from src.benchmark import Benchmark, QAData
+from src.benchmark import Benchmark
 
 
 os.environ["COHERE_API_KEY"] = "qOTcu0Xr3BGmpAO8zk9z41y7gx06mO3cgGQOcvlt"
@@ -26,3 +27,9 @@ benchmark.run(
         "The greenhouse effect occurs when gases in Earth's atmosphere trap the sun's heat. This process makes Earth much warmer than it would be without an atmosphere. The greenhouse effect is one of the things that makes Earth a comfortable place to live. However, human activities, especially the burning of fossil fuels, have intensified this natural process, resulting in global warming and climate change. Scientists are increasingly concerned that if greenhouse gas emissions continue at the current rate, the world will face dangerous consequences such as rising sea levels, increased frequency of extreme weather events, and significant impacts on biodiversity and human health."
     ]
 )
+
+# qa_datas = Benchmark.load_groundtruth("benchmark/thread_p180000-189999.jsonl")
+
+# with open("benchmark/questions.jsonl", "w", encoding="utf-8") as file:
+#     for qa in qa_datas:
+#         file.write(json.dumps(qa, ensure_ascii=False) + "\n")
