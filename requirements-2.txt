@@ -14,3 +14,4 @@ langchain-ollama
 langchain
 langchain_community
 ollama
+ragas~=0.1.21
