@@ -17,3 +17,7 @@ def embedding_document(docs):
 def embedding_query(query):
     query_embeddings = embedding.encode_queries([query])
     return query_embeddings['dense'][0]
+
+def embedding_query2(query):
+    query_embeddings = embedding.encode_queries([query])
+    return query_embeddings

@@ -105,3 +105,8 @@ class Statistic(BaseModel):
     point: int
     question: str
     answer: str
+
+class RetrievedDocument(BaseModel):
+    url: str = ""
+    title: str = ""
+    content: str = ""
