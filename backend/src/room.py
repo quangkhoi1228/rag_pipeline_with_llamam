@@ -1,6 +1,3 @@
-import uuid
-from datetime import datetime
-
 from fastapi import APIRouter, HTTPException
 from src.util import generate_uuid
 from src.entity import Room

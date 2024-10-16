@@ -1,5 +1,3 @@
-import os
-
 import psycopg2
 from pymilvus import (
     MilvusClient,

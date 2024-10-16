@@ -1,11 +1,7 @@
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from src.database import milvus_db, pg_create_connection
-from src.embedding import embedding_query
+from src.database import pg_create_connection
 from src.entity import Feedback, SendFeedback
-from src.faq import search_faq
-from src.llm import llm_model
 
 router = APIRouter()
 

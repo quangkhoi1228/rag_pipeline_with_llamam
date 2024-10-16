@@ -1,10 +1,8 @@
-from typing import Any, Optional
-
 from fastapi import APIRouter, HTTPException
 from src.database import milvus_db, pg_create_connection
 from src.embedding import embedding_document, embedding_query
 from src.entity import FAQ, CreateFAQ, CreateFAQPool, FAQPool
-from src.util import convert_int_to_string, generate_uuid
+from src.util import generate_uuid
 
 router = APIRouter()
 

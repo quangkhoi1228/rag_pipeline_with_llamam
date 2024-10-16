@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from src.config import MAX_FAQ_POOL
-from src.database import get_retrieve_context, milvus_db, pg_create_connection
-from src.embedding import embedding_query, embedding_query2
+from src.database import get_retrieve_context, pg_create_connection
+from src.embedding import embedding_query2
 from src.entity import Chat, ChatResponse, SendChat, RetrievedDocument
 from src.faq import (
     CreateFAQPool,
@@ -10,8 +10,6 @@ from src.faq import (
     random_faq_from_faq_pool,
     search_faq,
 )
-from src.llm import llm_model
-import ollama
 from groq import Groq
 
 router = APIRouter()
@@ -85,21 +83,45 @@ async def answer_with_rag_pipeline(chat: SendChat, version: str = "14-mini"):
     if version == "14-mini":
         [context, reference] = await create_context(chat.message)
 
-        db_chat_history = await get_chat_history(count=chat.history_count)
-        chat_history = [(item.sender, item.message) for item in db_chat_history]
-        prompt_formatted = """
-            You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. If you know return both answer and reference document (title and document url link) in user language. Use three sentences maximum and keep the answer concise.
-            Question: {question}
-            Context: {context}
-            History:{history}
-            Answer:
+        # Nhân: Vì một số lý do liên quan tới Groq (cụ thể là độ dài câu hỏi) nên không thể apply history vào được
+        # db_chat_history = await get_chat_history(count=chat.history_count)
+        # chat_history = [(item.sender, item.message) for item in db_chat_history]
+        # prompt_formatted_with_history = """
+        #     You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question or history of the chat. If you don't know the answer, just say that you don't know. If you know return both answer and reference document (title and document url link) in user language. Use three sentences maximum and keep the answer concise.
+        #     Question: {question}
+        #     Context: {context}
+        #     History:{history}
+        #     Answer:
 
-            """.format(
-            question=chat.message, context=context, history=chat_history
-        )
+        #     """.format(
+        #     question=chat.message, context=context, history=chat_history
+        # )
+        
+        # Prompt đơn giản cho llm local
+        # prompt_formatted_without_history = """
+        #     You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. If you know return both answer and reference document (title and document url link) in user language. Use three sentences maximum and keep the answer concise. 
+        #     Question: {question}
+        #     Context: {context}
+        #     Answer:
 
-        llm_res = llm_model.invoke(prompt_formatted)
-        return [llm_res, reference]
+        #     """.format(
+        #     question=chat.message, context=context
+        # )
+        
+        # Prompt cho grogq
+        system_prompt = """You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. If you know return both answer and reference document (title and document url link) in user language. Use three sentences maximum and keep the answer concise. 
+        Context: {context}
+        """.format(context=context)
+        
+        user_prompt = """
+            Hãy trả lời câu hỏi sau bằng ngôn ngữ tiếng Việt: {question}
+        """.format(question=chat.message)
+
+        final_response = llm_completion(system_prompt, user_prompt)
+        
+        if len(reference) <= 0:
+            return ["Tôi không có thông tin về câu hỏi này.", []]
+        return [final_response, reference]
     else:
         
         QUESTION_PARSING_SYS_MSG_PROMPT_LINE = """You are a legal assistant. Your task is to analyze questions from the Human.
@@ -153,7 +175,7 @@ async def answer_with_rag_pipeline(chat: SendChat, version: str = "14-mini"):
 
         print(f'After QAC remains {len(contexts)} docs')
         if len(contexts) <= 0:
-            return ["Tôi không có thông tin về  câu hỏi này.", []]
+            return ["Tôi không có thông tin về câu hỏi này.", []]
         snippet_text: str = format_snippets(contexts)
         user_msg: str = USER_MSG_TEMPLATE.format(
             q=chat.message,
