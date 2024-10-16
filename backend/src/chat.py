@@ -140,7 +140,6 @@ async def answer_with_rag_pipeline(chat: SendChat, version: str = "14-mini"):
         USER_MSG_TEMPLATE = """Câu hỏi: {q}
         Search result: ```
         {snippet}
-        Hãy trả lời câu hỏi bằng ngôn ngữ Việt Nam
         ```"""
         # RAG Processing
         # Retrieval Session
@@ -189,7 +188,7 @@ async def answer_with_rag_pipeline(chat: SendChat, version: str = "14-mini"):
             FINAL_SYS_MSG = (
                 "<role>\nYou are a legal question answering assistant. Your role is to provide accurate,"
                 " relevant and well-structured responses to user queries by leveraging information"
-                " from search results.\n\nTo generate a high-quality response:\n\n1. Carefully"
+                " from search results. Your response must be in Vietnamese \n\nTo generate a high-quality response:\n\n1. Carefully"
                 " analyze the user's question to understand their information needs\n2. Review the"
                 " search results returned by the system to identify relevant information \n3."
                 " Synthesize the key details from the search results into a coherent, informative"
