@@ -2,6 +2,7 @@ import psycopg2
 from pymilvus import (
     MilvusClient,
     WeightedRanker,
+    RRFRanker,
     AnnSearchRequest,
     Collection,
     connections,
@@ -17,7 +18,7 @@ connections.connect(uri="http://localhost:19530")  # Replace with your Milvus se
 collection = Collection(name="bat_dong_san")
 collection.load()
 
-rerank = WeightedRanker(0.2, 0.8)
+rerank = RRFRanker()
 
 
 # Kết nối tới PostgreSQL

@@ -114,7 +114,7 @@ async def answer_with_rag_pipeline(chat: SendChat, version: str = "14-mini"):
         """.format(context=context)
         
         user_prompt = """
-            Hãy trả lời câu hỏi sau bằng ngôn ngữ tiếng Việt: {question}
+            Hãy trả lời câu hỏi sau bằng ngôn ngữ Việt Nam: {question}
         """.format(question=chat.message)
 
         final_response = llm_completion(system_prompt, user_prompt)
@@ -140,6 +140,7 @@ async def answer_with_rag_pipeline(chat: SendChat, version: str = "14-mini"):
         USER_MSG_TEMPLATE = """Câu hỏi: {q}
         Search result: ```
         {snippet}
+        Hãy trả lời câu hỏi bằng ngôn ngữ Việt Nam
         ```"""
         # RAG Processing
         # Retrieval Session
