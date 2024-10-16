@@ -152,8 +152,8 @@ async def answer_with_rag_pipeline(chat: SendChat, version: str = "14-mini"):
                         print(parse_qac_response(qac_res))
 
         print(f'After QAC remains {len(contexts)} docs')
-        # if len(contexts) <= 0:
-        #     return ["Tôi không có thông tin về  câu hỏi này.", []]
+        if len(contexts) <= 0:
+            return ["Tôi không có thông tin về  câu hỏi này.", []]
         snippet_text: str = format_snippets(contexts)
         user_msg: str = USER_MSG_TEMPLATE.format(
             q=chat.message,
