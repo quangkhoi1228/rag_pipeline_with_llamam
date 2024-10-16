@@ -47,8 +47,8 @@ def response_generator(content: models.Assistant_Message):
 
 
 # Send message
-async def send_message(message: models.Message) -> models.Assistant_Message:
-    response = await api_llm.make_request("send_message", message)
+async def send_message(message: models.Message, model_select: str) -> models.Assistant_Message:
+    response = await api_llm.make_request("send_message", message, params={"version":model_select})
     assit_message = models.Assistant_Message(**response)
     return assit_message
 
@@ -157,6 +157,8 @@ async def main():
         if st.button(":material/clear: Xoá hội thoại"):
             st.session_state.messages = []
             await clear_chat()
+        models = ['14-mini', '14-pro']
+        model_select = st.selectbox("Chọn mô hình sử dụng", models, index=0)
 
     # Display chat messages from history on app rerun
     for message_history in st.session_state.messages:
@@ -208,7 +210,7 @@ async def main():
             message = get_message()
 
             with st.spinner("Thinking..."):
-                assist_response = await send_message(message)
+                assist_response = await send_message(message, model_select)
 
             full_response = st.write_stream(response_generator(assist_response))
 

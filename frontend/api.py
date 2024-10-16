@@ -51,10 +51,10 @@ class API_LLM:
     def __init__(self, host: str = "http://localhost:8000"):
         self.host = host
 
-    async def make_request(self, feature_name: str, body: any = None):
+    async def make_request(self, feature_name: str, body: any = None, params: dict = {}):
 
         if feature_name == self.FEATURES["send_message"]:
-            return await self.send_message(body)
+            return await self.send_message(body, params)
 
         elif feature_name == self.FEATURES["regenerate_response"]:
             return await self.regenerate_response(body)
@@ -70,9 +70,9 @@ class API_LLM:
 
         raise Exception(f"Not found feature {feature_name}")
 
-    async def send_message(self, message: models.Message):
+    async def send_message(self, message: models.Message, params: dict):
         request_url = Request_URL(url=f"{self.host}/chat/send", method="POST")
-        api = API(request_url, body=copy.deepcopy(message).to_dict())
+        api = API(request_url, body=copy.deepcopy(message).to_dict(), params=params)
         return await api.make_request()
 
     async def regenerate_response(self, message: models.Message):

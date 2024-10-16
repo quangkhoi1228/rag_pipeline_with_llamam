@@ -81,8 +81,8 @@ async def create_context(message: str):
     return [context, reference]
 
 
-async def answer_with_rag_pipeline(chat: SendChat, version: str = "simple"):
-    if version == "simple":
+async def answer_with_rag_pipeline(chat: SendChat, version: str = "14-mini"):
+    if version == "14-mini":
         [context, reference] = await create_context(chat.message)
 
         db_chat_history = await get_chat_history(count=chat.history_count)
@@ -100,7 +100,8 @@ async def answer_with_rag_pipeline(chat: SendChat, version: str = "simple"):
 
         llm_res = llm_model.invoke(prompt_formatted)
         return [llm_res, reference]
-    elif version == "enhancement":
+    else:
+        
         QUESTION_PARSING_SYS_MSG_PROMPT_LINE = """You are a legal assistant. Your task is to analyze questions from the Human.
         Instructions:
         1. You need to analyze the question below and break it down into 3 most correct smallest questions.
@@ -118,36 +119,20 @@ async def answer_with_rag_pipeline(chat: SendChat, version: str = "simple"):
         Search result: ```
         {snippet}
         ```"""
-
-        FINAL_SYS_MSG = (
-            "<role>\nYou are a legal question answering assistant. Your role is to provide accurate,"
-            " relevant and well-structured responses to user queries by leveraging information"
-            " from search results.\n\nTo generate a high-quality response:\n\n1. Carefully"
-            " analyze the user's question to understand their information needs\n2. Review the"
-            " search results returned by the system to identify relevant information \n3."
-            " Synthesize the key details from the search results into a coherent, informative"
-            " response that directly addresses the user's question\n4. Structure the response"
-            " as follows:\n   - Opening (1-3 sentences): Provide a general overview of the"
-            " topic without including specific numerical details \n   - Answer (detailed"
-            " response): Present the main findings and details from the search results, using"
-            " bullet points (-) to clearly list key information and penalties\n   - Citation:"
-            " Include references to the search results at the end of the response\n5. Aim for a"
-            " response length of 500-1000 words\n6. Write the response in Vietnamese  \n7."
-            " Focus only on information directly relevant to answering the question\n8. Avoid"
-            ' using generic phrases like "Based on the information found in the related'
-            ' documents," "Your question is unclear," or "based on the information from'
-            ' [QA-2]"\n\n<response_format>\n # Mở đầu\n...\n\n# Trả lời\n\n...\n</response_format>\n</role>'
-        )
-
-        parse_question = llm_completion(system_prompt=QUESTION_PARSING_SYS_MSG_PROMPT_LINE, user_query=message)
+        # RAG Processing
+        # Retrieval Session
+        parse_question = llm_completion(system_prompt=QUESTION_PARSING_SYS_MSG_PROMPT_LINE, user_query=chat.message)
         search_query = parse_search_query(parse_question)
         print(search_query)
         contexts = []
-        message_embedding = embedding_query2(message)
+        message_embedding = embedding_query2(chat.message)
         res = get_retrieve_context(message_embedding)
         retrieved_documents = [ RetrievedDocument(url = item.url, title = item.title_text, content = item.content_text) for index, item in enumerate(res[0])]
+        
+        #LLM Session
         for doc in retrieved_documents:
-            qac_message = llm_completion(system_prompt=QAC_SYS_TEMPLATE, user_query=message)
+            # Hỏi lần thứ nhất, xem thử nó có thể trả lời bằng các document được cung cấp sau khi retrieval hay không
+            qac_res = llm_completion(system_prompt=QAC_SYS_TEMPLATE, user_query=chat.message)
             if parse_qac_response(qac_res) == "yes":
                 contexts.append(doc)
                 continue
@@ -171,13 +156,84 @@ async def answer_with_rag_pipeline(chat: SendChat, version: str = "simple"):
         #     return ["Tôi không có thông tin về  câu hỏi này.", []]
         snippet_text: str = format_snippets(contexts)
         user_msg: str = USER_MSG_TEMPLATE.format(
-            q=query,
+            q=chat.message,
             snippet=snippet_text
         )
 
-        references = "\n".join([context.url for context in contexts])
+        references = "\n\n".join([context.url for context in contexts])
+        # Final system prompt for multiple model 
+        if version == "14-pro":
+            FINAL_SYS_MSG = (
+                "<role>\nYou are a legal question answering assistant. Your role is to provide accurate,"
+                " relevant and well-structured responses to user queries by leveraging information"
+                " from search results.\n\nTo generate a high-quality response:\n\n1. Carefully"
+                " analyze the user's question to understand their information needs\n2. Review the"
+                " search results returned by the system to identify relevant information \n3."
+                " Synthesize the key details from the search results into a coherent, informative"
+                " response that directly addresses the user's question\n4. Structure the response"
+                " as follows:\n   - Opening (1-3 sentences): Provide a general overview of the"
+                " topic without including specific numerical details \n   - Answer (detailed"
+                " response): Present the main findings and details from the search results, using"
+                " bullet points (-) to clearly list key information and penalties\n   - Citation:"
+                " Include references to the search results at the end of the response\n5. Aim for a"
+                " response length of 500-1000 words\n6. Write the response in Vietnamese  \n7."
+                " Focus only on information directly relevant to answering the question\n8. Avoid"
+                ' using generic phrases like "Based on the information found in the related'
+                ' documents," "Your question is unclear," or "based on the information from'
+                ' [QA-2]"\n\n<response_format>\n # Mở đầu\n...\n\n# Trả lời\n\n...\n</response_format>\n</role>'
+            )
+        elif version == "14-pro-fw":
+            answer_sample = '''
+{
+    "câu hỏi": "Mức xử phạt đối với hành vi cản trở, gây khó khăn cho việc sử dụng đất của người khác là bao nhiêu tiền?",
+    "câu trả lời": """
+        Căn cứ theo Điều 15 Nghị định 123/2024/NĐ-CP quy định về cản trở, gây khó khăn cho việc sử dụng đất của người khác như sau:
+            `Điều 15. Cản trở, gây khó khăn cho việc sử dụng đất của người khác
+            1. Phạt tiền từ 1.000.000 đồng đến 3.000.000 đồng đối với hành vi đưa vật liệu xây dựng hoặc các vật khác lên thửa đất thuộc quyền sử dụng của người khác hoặc thửa đất thuộc quyền sử dụng của mình mà cản trở, gây khó khăn cho việc sử dụng đất của người khác.
+            2. Phạt tiền từ 5.000.000 đồng đến 10.000.000 đồng đối với hành vi đào bới, xây tường, làm hàng rào trên đất thuộc quyền sử dụng của mình hoặc của người khác mà cản trở, gây khó khăn cho việc sử dụng đất của người khác.
+            3. Biện pháp khắc phục hậu quả:
+            Buộc khôi phục lại tình trạng ban đầu của đất trước khi vi phạm.
+        Căn cứ tại khoản 2 Điều 5 Nghị định 123/2024/NĐ-CP quy định về mức phạt tiền như sau:
+            Điều 5. Mức phạt tiền và thẩm quyền xử phạt
+            [...]
+            2. Mức phạt tiền quy định tại Chương II của Nghị định này áp dụng đối với cá nhân (trừ khoản 4, 5, 6 Điều 18, khoản 1 Điều 19, điểm b khoản 1 và khoản 4 Điều 20, Điều 22, khoản 2 và khoản 3 Điều 29 Nghị định này). Mức phạt tiền đối với tổ chức bằng 02 lần mức phạt tiền đối với cá nhân có cùng một hành vi vi phạm hành chính.
+            [...]`
+        Như vậy, mức xử phạt đối với hành vi cản trở, gây khó khăn cho việc sử dụng đất của người khác cụ thể là:
+        - Phạt tiền từ 1.000.000 đồng đến 3.000.000 đồng đối với hành vi đưa vật liệu xây dựng hoặc các vật khác lên thửa đất thuộc quyền sử dụng của người khác hoặc thửa đất thuộc quyền sử dụng của mình mà cản trở, gây khó khăn cho việc sử dụng đất của người khác.
+        - Phạt tiền từ 5.000.000 đồng đến 10.000.000 đồng đối với hành vi đào bới, xây tường, làm hàng rào trên đất thuộc quyền sử dụng của mình hoặc của người khác mà cản trở, gây khó khăn cho việc sử dụng đất của người khác.
+        - Đồng thời, biện pháp khắc phục hậu quả là buộc khôi phục lại tình trạng ban đầu của đất trước khi vi phạm.
+        Lưu ý: Mức phạt tiền quy định trên áp dụng đối với cá nhân. Mức phạt tiền đối với tổ chức bằng 02 lần mức phạt tiền đối với cá nhân có cùng một hành vi vi phạm hành chính.
+    """
+}, 
+{
+    "câu hỏi": "Các phương pháp định giá đất bao gồm những phương pháp nào?",
+    "câu trả lời": """
+        Căn cứ tại khoản 5 Điều 158 Luật Đất đai 2024 quy định về phương pháp định giá đất như sau:
+        (1) Phương pháp so sánh được thực hiện bằng cách điều chỉnh mức giá của các thửa đất có cùng mục đích sử dụng đất, tương đồng nhất định về các yếu tố có ảnh hưởng đến giá đất đã chuyển nhượng trên thị trường, đã trúng đấu giá quyền sử dụng đất mà người trúng đấu giá đã hoàn thành nghĩa vụ tài chính theo quyết định trúng đấu giá thông qua việc phân tích, so sánh các yếu tố ảnh hưởng đến giá đất sau khi đã loại trừ giá trị tài sản gắn liền với đất (nếu có) để xác định giá của thửa đất cần định giá;
+        (2) Phương pháp thu nhập được thực hiện bằng cách lấy thu nhập ròng bình quân năm trên một diện tích đất chia cho lãi suất tiền gửi tiết kiệm bình quân của loại tiền gửi bằng tiền Việt Nam kỳ hạn 12 tháng tại các ngân hàng thương mại do Nhà nước nắm giữ trên 50% vốn điều lệ hoặc tổng số cổ phần có quyền biểu quyết trên địa bàn cấp tỉnh của 03 năm liền kề tính đến hết quý gần nhất có số liệu trước thời điểm định giá đất;
+        (3) Phương pháp thặng dư được thực hiện bằng cách lấy tổng doanh thu phát triển ước tính trừ đi tổng chi phí phát triển ước tính của thửa đất, khu đất trên cơ sở sử dụng đất có hiệu quả cao nhất (hệ số sử dụng đất, mật độ xây dựng, số tầng cao tối đa của công trình) theo quy hoạch sử dụng đất, quy hoạch chi tiết xây dựng đã được cơ quan có thẩm quyền phê duyệt;
+        (4) Phương pháp hệ số điều chỉnh giá đất được thực hiện bằng cách lấy giá đất trong bảng giá đất nhân với hệ số điều chỉnh giá đất. Hệ số điều chỉnh giá đất được xác định thông qua việc so sánh giá đất trong bảng giá đất với giá đất thị trường;
+        (5) Chính phủ quy định phương pháp định giá đất khác chưa được quy định tại (1), (2), (3) và (4) sau khi được sự đồng ý của Ủy ban Thường vụ Quốc hội.
+    """
+}
+'''
+
+            prompt_template = """
+            Bạn đang đóng vai là một luật sư rất giỏi chuyên về luật bất động sản. Bạn đang tư vấn cho khách hàng về vấn đề pháp lý liên quan đến bất động sản.
+            Bạn được cung cấp một phần văn bản pháp luật. Trả lời bằng tiếng Việt. 
+            Dưới đây là 2 ví dụ về câu hỏi từ khách hàng và cách bạn trả lời: {answer_sample}
+            Tên văn bản pháp luật: {document_name}
+            Văn bản pháp luật: {document}
+            Câu hỏi: {question}
+            Câu trả lời:
+            """
+
+            FINAL_SYS_MSG = prompt_template.format(answer_sample=answer_sample, document_name=[doc.title for doc in contexts], document=[doc.content for doc in contexts], question=chat.message)
+            
+        # Câu trả lời cuối cùng của LLM
         final_response = llm_completion(system_prompt=FINAL_SYS_MSG, user_query=user_msg)
-        final_response = f'{final_response} /n References: /n {references}'
+        if len(references) > 0:
+            final_response = f'{final_response} \n\n Đường dẫn cho các tài liệu tham khảo: \n\n {references}'
 
         return [final_response, []]
 
