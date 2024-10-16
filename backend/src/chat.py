@@ -20,6 +20,11 @@ client_groq = Groq(
     api_key="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",
 )
 
+# Backup
+# client_groq = Groq(
+#     api_key="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",
+# )
+
 # Enhancement Fuction start ==========
 def llm_completion(system_prompt, user_query):
     chat_completion = client_groq.chat.completions.create(
