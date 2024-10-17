@@ -165,7 +165,7 @@ def detect_new_faq(clusters):
         res = (
             client_groq.chat.completions.create(
                 messages=message,
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
             )
             .choices[0]
             .message.content.strip()
@@ -195,7 +195,7 @@ async def widen_faq_from_user_chat():
 
     for faq_question in new_faqs_question:
         [llm_res, reference] = await answer_with_rag_pipeline(
-            SendChat(message=faq_question["question"])
+            SendChat(message=faq_question["question"]), version="14-pro"
         )
         answer = llm_res
         create_faq(CreateFAQ(question=faq_question["question"], answer=answer))

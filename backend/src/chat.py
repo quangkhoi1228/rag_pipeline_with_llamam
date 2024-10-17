@@ -32,7 +32,7 @@ def llm_completion(system_prompt, user_query):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_query},
         ],
-        model="llama3-8b-8192",
+        model="llama-3.1-8b-instant",
     )
     return chat_completion.choices[0].message.content
 
@@ -302,7 +302,7 @@ async def create_chat(chat: Chat):
 
 
 @router.post("/send", response_model=ChatResponse)
-async def send_chat(chat: SendChat, version: str | None = "simple"):
+async def send_chat(chat: SendChat, version: str | None = "14-mini"):
     reference = []
     faq_id = None
     similar_faq = search_faq(chat.message, 1)
