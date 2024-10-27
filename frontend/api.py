@@ -57,7 +57,7 @@ class API_LLM:
             return await self.send_message(body, params)
 
         elif feature_name == self.FEATURES["regenerate_response"]:
-            return await self.regenerate_response(body)
+            return await self.regenerate_response(body, params)
 
         elif feature_name == self.FEATURES["clear_chat"]:
             return await self.clear_chat()
@@ -75,9 +75,9 @@ class API_LLM:
         api = API(request_url, body=copy.deepcopy(message).to_dict(), params=params)
         return await api.make_request()
 
-    async def regenerate_response(self, message: models.Message):
+    async def regenerate_response(self, message: models.Message, params: dict):
         request_url = Request_URL(url=f"{self.host}/chat/regenerate", method="POST")
-        api = API(request_url, body=copy.deepcopy(message).to_dict())
+        api = API(request_url, body=copy.deepcopy(message).to_dict(), params=params)
         return await api.make_request()
 
     async def clear_chat(self):

@@ -54,8 +54,8 @@ async def send_message(message: models.Message, model_select: str) -> models.Ass
 
 
 # Regenerate response
-async def regenerate_response(message: models.Message) -> models.Assistant_Message:
-    response = await api_llm.make_request("regenerate_response", message)
+async def regenerate_response(message: models.Message, model_select: str) -> models.Assistant_Message:
+    response = await api_llm.make_request("regenerate_response", message, params={"version":model_select})
     assit_message = models.Assistant_Message(**response)
     return assit_message
 
@@ -174,7 +174,7 @@ async def main():
         with st.chat_message("assistant"):
             message = get_message()
             with st.spinner("Thinking..."):
-                assist_response = await regenerate_response(message)
+                assist_response = await regenerate_response(message, model_select)
 
             full_response = st.write_stream(response_generator(assist_response))
             # Add assistant response to chat history

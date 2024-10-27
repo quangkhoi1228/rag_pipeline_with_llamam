@@ -331,7 +331,7 @@ async def send_chat(chat: SendChat, version: str | None = "14-mini"):
 
 
 @router.post("/regenerate", response_model=ChatResponse)
-async def regenerate_chat(chat: SendChat):
+async def regenerate_chat(chat: SendChat, version: str = '14-mini'):
     context_items = []
     prev_faq_id = chat.faq_id
     faq_id = prev_faq_id
@@ -342,7 +342,7 @@ async def regenerate_chat(chat: SendChat):
 
         # return random faq from pool if reaching max faq bool, else using rag
         if len(faq_pools) <= MAX_FAQ_POOL - 1:
-            [llm_res, context_items] = await answer_with_rag_pipeline(chat)
+            [llm_res, context_items] = await answer_with_rag_pipeline(chat, version)
             answer = llm_res
             # insert faq bool
             faq_pool = await create_faq_pool(
