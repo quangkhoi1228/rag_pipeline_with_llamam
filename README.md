@@ -90,6 +90,12 @@ CREATE TABLE public.feedback (
 
 
 ```
+### Insert BatDongSan Data
+1. Download dataset from Kaggle: 
+https://www.kaggle.com/datasets/phongquc/bds-encoded
+2. Copy dataset to folder bds
+3. Run bat_dong_san/insert_to_milvus.ipynb for BatDongSan Data
+
 
 ## Timeline
 
