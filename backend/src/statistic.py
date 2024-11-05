@@ -86,6 +86,7 @@ async def get_statistic_data():
 
 @router.patch("/update-faq", response_model=bool)
 async def update_faq_from_statistic_data():
+    print("Updating the faq...........................")
     statistic_data = await get_statistic_data()
 
     top_1 = {}
@@ -187,6 +188,7 @@ def detect_new_faq(clusters):
 
 @router.patch("/widen-faq", response_model=bool)
 async def widen_faq_from_user_chat():
+    print("Searching the faq...........................")
     user_history = await get_user_chat_history()
     messages = [chat.message.strip().replace("\n", "") for chat in user_history]
     clusters = cluster_user_messages(messages)
@@ -204,8 +206,15 @@ async def widen_faq_from_user_chat():
 
 async def scheduled_task():
     print(f"Task executed at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    await update_faq_from_statistic_data()
-    await widen_faq_from_user_chat()
+    try:
+        await widen_faq_from_user_chat()
+    except Exception as e:
+        print(e)
+    
+    try:
+        await update_faq_from_statistic_data()
+    except Exception as e:
+        print(e)
 
 
 # Create an APScheduler instance
